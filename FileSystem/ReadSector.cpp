@@ -1,4 +1,4 @@
-#include "ReadSector.h"
+﻿#include "ReadSector.h"
 
 DWORD readSector(LPCWSTR drive, int readPoint, uint8_t sector[]) { // readPoint MUST be a multiple of 512
     DWORD bytesRead = 0;
@@ -13,13 +13,13 @@ DWORD readSector(LPCWSTR drive, int readPoint, uint8_t sector[]) { // readPoint 
         NULL);                  // Handle to template
 
     if (partition == INVALID_HANDLE_VALUE) { // cannot open drive
-        throw "Cannot open partition!";
+        throw "Không thể mở ổ đĩa!";
     }
 
     SetFilePointer(partition, readPoint, NULL, FILE_BEGIN); //Set a Point to Read
 
     if (!ReadFile(partition, sector, _SECTOR_SIZE, &bytesRead, NULL)) {
-        throw "Cannot read sector!";
+        throw "Không thể đọc sector!";
     }
 
     CloseHandle(partition);

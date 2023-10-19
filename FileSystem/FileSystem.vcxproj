@@ -89,8 +89,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="FAT32BootSectorGUI.cpp" />
     <ClCompile Include="ReadSector.cpp" />
     <QtRcc Include="MainGUI.qrc" />
+    <QtUic Include="FAT32BootSectorGUI.ui" />
     <QtUic Include="MainGUI.ui" />
     <QtMoc Include="MainGUI.h" />
     <ClCompile Include="MainGUI.cpp" />
@@ -102,6 +104,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FAT32.h" />
+    <QtMoc Include="FAT32BootSectorGUI.h" />
     <ClInclude Include="NTFS.h" />
     <ClInclude Include="ReadSector.h" />
   </ItemGroup>

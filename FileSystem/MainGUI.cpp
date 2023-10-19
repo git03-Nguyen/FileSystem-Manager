@@ -81,4 +81,52 @@ void MainGUI::initializeFeatureButtons() {
     );
     btnDisplayTree->setLayout(pLayout2);
 
+    // when click on btnReadDisk, open a dialog to enter drive letter
+    connect(btnReadDisk, &QPushButton::clicked, this, &MainGUI::onBtnReadDiskClicked);
+
+}
+
+void MainGUI::onBtnReadDiskClicked() {
+	QString drive = QInputDialog::getText(this, "Đọc thông tin phân vùng", "Nhập đường dẫn ổ đĩa (ví dụ: C:)");
+	if (drive.isEmpty()) return;
+
+	// convert QString to LPCWSTR
+	std::wstring wstr = L"\\\\.\\" + drive.toStdWString();
+    LPCWSTR lpcwstr = wstr.c_str();
+
+	// read boot sector
+	uint8_t bootSector[_SECTOR_SIZE] = { 0 };
+
+    try {
+        DWORD bytesRead = readSector(lpcwstr, 0, bootSector);
+        // read file system type
+        FileSystem fs = readFileSystemType(bootSector);
+        if (fs == FileSystem::Others) {
+            QMessageBox::critical(this, "Lỗi", "Hệ thống tập tin không được hỗ trợ!");
+            return;
+        }
+
+        // parse boot sector into information
+        FAT32_BS* fat32_bs = nullptr;
+        NTFS_BS* ntfs_bs = nullptr;
+
+        if (fs == FileSystem::FAT32) {
+            fat32_bs = (FAT32_BS*)bootSector;
+            // display information in a new dialog, make dialog modal
+            FAT32BootSectorGUI* fat32BootSectorGUI = new FAT32BootSectorGUI(this, fat32_bs);
+            fat32BootSectorGUI->setWindowModality(Qt::ApplicationModal);
+            fat32BootSectorGUI->show();
+        }
+        else if (fs == FileSystem::NTFS) {
+            ntfs_bs = (NTFS_BS*)bootSector;
+        }
+    }
+    catch (const char* error) {
+        std::string errorCode = "Mã lỗi: " + std::to_string(GetLastError()) + "  ";
+        QMessageBox::critical(this, "Lỗi", (std::string(error) + " " + errorCode).c_str());
+	}
+    catch (...) {
+        std::string error = "Mã lỗi: " + std::to_string(GetLastError()) + "  ";
+        QMessageBox::critical(this, "Lỗi", ("Đọc không thành công! " + error).c_str());
+    }
 }

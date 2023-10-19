@@ -2,11 +2,15 @@
 
 #include <QtWidgets/QMainWindow>
 #include <QHBoxLayout>
+#include <QInputDialog>
+#include <QMessageBox>
 
 #include "ui_MainGUI.h"
 #include "ReadSector.h"
 #include "FAT32.h"
 #include "NTFS.h"
+
+#include "FAT32BootSectorGUI.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainGUIClass; };
@@ -23,4 +27,5 @@ public:
 private:
     Ui::MainGUIClass *ui;
     void initializeFeatureButtons();
+    void onBtnReadDiskClicked();
 };
