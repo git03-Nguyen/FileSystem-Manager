@@ -92,12 +92,14 @@
     <ClCompile Include="BootSectorGUI.cpp" />
     <ClCompile Include="FAT32_NTFS.cpp" />
     <ClCompile Include="ReadSector.cpp" />
+    <ClCompile Include="TreeFolderGUI.cpp" />
     <QtRcc Include="MainGUI.qrc" />
     <QtUic Include="BootSectorGUI.ui" />
     <QtUic Include="MainGUI.ui" />
     <QtMoc Include="MainGUI.h" />
     <ClCompile Include="MainGUI.cpp" />
     <ClCompile Include="main.cpp" />
+    <QtUic Include="TreeFolderGUI.ui" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="assets\floppydisk.png" />
@@ -105,6 +107,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FAT32_NTFS.h" />
+    <QtMoc Include="TreeFolderGUI.h" />
     <QtMoc Include="BootSectorGUI.h" />
     <ClInclude Include="ReadSector.h" />
   </ItemGroup>

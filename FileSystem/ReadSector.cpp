@@ -1,10 +1,19 @@
 ﻿#include "ReadSector.h"
 
-DWORD readSector(LPCWSTR drive, int readPoint, uint8_t sector[]) { // readPoint MUST be a multiple of 512
+DWORD readSector(std::string drive, int startSector, uint8_t sector[]) { // readPoint MUST be a multiple of 512
+    if (drive.size() != 2 || drive[1] != ':') {
+        SetLastError(3);
+        throw "Đường dẫn ổ đĩa không hợp lệ!";
+    }
+
     DWORD bytesRead = 0;
     HANDLE partition = NULL;
 
-    partition = CreateFile(drive,    // Drive to open
+    std::wstring driveWstr = std::wstring(drive.begin(), drive.end());
+    driveWstr = L"\\\\.\\"+ driveWstr;
+    LPCWSTR lpcwstr = driveWstr.c_str();
+
+    partition = CreateFile(lpcwstr,    // Drive to open
         GENERIC_READ,           // Access mode
         FILE_SHARE_READ | FILE_SHARE_WRITE,        // Share Mode
         NULL,                   // Security Descriptor
@@ -16,7 +25,7 @@ DWORD readSector(LPCWSTR drive, int readPoint, uint8_t sector[]) { // readPoint 
         throw "Không thể mở ổ đĩa!";
     }
 
-    SetFilePointer(partition, readPoint, NULL, FILE_BEGIN); //Set a Point to Read
+    SetFilePointer(partition, startSector * _SECTOR_SIZE, NULL, FILE_BEGIN); //Set a Point to Read
 
     if (!ReadFile(partition, sector, _SECTOR_SIZE, &bytesRead, NULL)) {
         throw "Không thể đọc sector!";

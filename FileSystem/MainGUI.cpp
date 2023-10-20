@@ -10,12 +10,14 @@ MainGUI::MainGUI(QWidget *parent)
     initializeFeatureButtons();
 
     bootSectorGUI = nullptr;
+    treeFolderGUI = nullptr;
 }
 
 MainGUI::~MainGUI()
 {
     delete ui;
     delete bootSectorGUI;
+    delete treeFolderGUI;
 }
 
 void MainGUI::initializeFeatureButtons() {
@@ -89,21 +91,21 @@ void MainGUI::initializeFeatureButtons() {
     // when click on btnReadDisk, open a dialog to enter drive letter
     connect(btnReadDisk, &QPushButton::clicked, this, &MainGUI::onBtnReadDiskClicked);
 
+    // when click on btnDisplayTree, open a dialog to enter drive letter
+    // then display tree
+    connect(btnDisplayTree, &QPushButton::clicked, this, &MainGUI::onBtnDisplayTreeClicked);
+
+
 }
 
 void MainGUI::onBtnReadDiskClicked() {
 	QString drive = QInputDialog::getText(this, "Đọc thông tin phân vùng", "Nhập đường dẫn ổ đĩa (ví dụ: F:)");
 	if (drive.isEmpty()) return;
 
-	// convert QString to LPCWSTR
-	std::wstring wstr = L"\\\\.\\" + drive.toStdWString();
-    LPCWSTR lpcwstr = wstr.c_str();
-
-	// read boot sector
-	uint8_t bootSector[_SECTOR_SIZE] = { 0 };
-
     try {
-        DWORD bytesRead = readSector(lpcwstr, 0, bootSector);
+        // read boot sector
+        uint8_t bootSector[_SECTOR_SIZE] = { 0 };
+        DWORD bytesRead = readSector(drive.toStdString(), 0, bootSector);
         // read file system type
         FileSystem fs = readFileSystemType(bootSector);
         if (fs == FileSystem::Others) {
@@ -133,3 +135,45 @@ void MainGUI::onBtnReadDiskClicked() {
         QMessageBox::critical(this, "Lỗi", ("Đọc không thành công! " + error).c_str());
     }
 }
+
+void MainGUI::onBtnDisplayTreeClicked() {
+    QString drive = QInputDialog::getText(this, "Hiển thị cây thư mục gốc", "Nhập đường dẫn ổ đĩa (ví dụ: F:)");
+    if (drive.isEmpty()) return;
+
+    try {
+        // read boot sector
+        uint8_t bootSector[_SECTOR_SIZE] = { 0 };
+        DWORD bytesRead = readSector(drive.toStdString(), 0, bootSector);
+        // read file system type
+        FileSystem fs = readFileSystemType(bootSector);
+        if (fs == FileSystem::Others) {
+            QMessageBox::critical(this, "Lỗi", "Hệ thống tập tin không được hỗ trợ!");
+            return;
+        }
+
+        // display information in a new dialog, make dialog modal
+        if (treeFolderGUI) delete treeFolderGUI;
+        treeFolderGUI = new TreeFolderGUI(this, bootSector);
+        treeFolderGUI->setWindowModality(Qt::ApplicationModal);
+        treeFolderGUI->show();
+
+    }
+    catch (const char* error) {
+        int errorCode = GetLastError();
+        if (errorCode == 5) {
+            QMessageBox::critical(this, "Lỗi", "Vui lòng khởi chạy lại dưới quyền admin!");
+        }
+        else {
+            std::string errorStr = "Mã lỗi: " + std::to_string(errorCode) + "  ";
+            QMessageBox::critical(this, "Lỗi", (std::string(error) + " " + errorStr).c_str());
+        }
+    }
+    catch (...) {
+        std::string error = "Mã lỗi: " + std::to_string(GetLastError()) + "  ";
+        QMessageBox::critical(this, "Lỗi", ("Đọc không thành công! " + error).c_str());
+    }
+
+
+}
+
+

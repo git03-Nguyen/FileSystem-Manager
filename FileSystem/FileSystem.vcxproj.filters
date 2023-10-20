@@ -49,6 +49,9 @@
     <ClCompile Include="FAT32_NTFS.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TreeFolderGUI.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="assets\floppydisk.png">
@@ -70,9 +73,15 @@
     <QtMoc Include="BootSectorGUI.h">
       <Filter>Header Files</Filter>
     </QtMoc>
+    <QtMoc Include="TreeFolderGUI.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="BootSectorGUI.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="TreeFolderGUI.ui">
       <Filter>Form Files</Filter>
     </QtUic>
   </ItemGroup>

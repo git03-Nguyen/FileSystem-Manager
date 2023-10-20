@@ -10,6 +10,7 @@
 #include "FAT32_NTFS.h"
 
 #include "BootSectorGUI.h"
+#include "TreeFolderGUI.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainGUIClass; };
@@ -26,6 +27,8 @@ public:
 private:
     Ui::MainGUIClass *ui;
     BootSectorGUI* bootSectorGUI;
+    TreeFolderGUI* treeFolderGUI;
     void initializeFeatureButtons();
     void onBtnReadDiskClicked();
+    void onBtnDisplayTreeClicked();
 };
