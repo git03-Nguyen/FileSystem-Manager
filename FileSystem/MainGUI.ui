@@ -29,7 +29,10 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>MainGUI</string>
+   <string>Đồ án HĐH - Hệ thống quản lý tập tin</string>
+  </property>
+  <property name="windowIcon">
+   <iconset theme="accessories-calculator"/>
   </property>
   <widget class="QWidget" name="centralWidget">
    <widget class="QLabel" name="label">
@@ -98,6 +101,9 @@
        <bold>false</bold>
       </font>
      </property>
+     <property name="cursor">
+      <cursorShape>PointingHandCursor</cursorShape>
+     </property>
      <property name="text">
       <string/>
      </property>
@@ -116,6 +122,9 @@
        <pointsize>10</pointsize>
        <bold>false</bold>
       </font>
+     </property>
+     <property name="cursor">
+      <cursorShape>PointingHandCursor</cursorShape>
      </property>
      <property name="text">
       <string/>

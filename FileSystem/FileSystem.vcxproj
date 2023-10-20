@@ -89,10 +89,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="FAT32BootSectorGUI.cpp" />
+    <ClCompile Include="BootSectorGUI.cpp" />
+    <ClCompile Include="FAT32_NTFS.cpp" />
     <ClCompile Include="ReadSector.cpp" />
     <QtRcc Include="MainGUI.qrc" />
-    <QtUic Include="FAT32BootSectorGUI.ui" />
+    <QtUic Include="BootSectorGUI.ui" />
     <QtUic Include="MainGUI.ui" />
     <QtMoc Include="MainGUI.h" />
     <ClCompile Include="MainGUI.cpp" />
@@ -103,9 +104,8 @@
     <Image Include="assets\folder_yellow.png" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="FAT32.h" />
-    <QtMoc Include="FAT32BootSectorGUI.h" />
-    <ClInclude Include="NTFS.h" />
+    <ClInclude Include="FAT32_NTFS.h" />
+    <QtMoc Include="BootSectorGUI.h" />
     <ClInclude Include="ReadSector.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

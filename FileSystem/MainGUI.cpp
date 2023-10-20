@@ -5,12 +5,17 @@ MainGUI::MainGUI(QWidget *parent)
     , ui(new Ui::MainGUIClass())
 {
     ui->setupUi(this);
+    this->setWindowIcon(QIcon("./assets/os.png"));
+
     initializeFeatureButtons();
+
+    bootSectorGUI = nullptr;
 }
 
 MainGUI::~MainGUI()
 {
     delete ui;
+    delete bootSectorGUI;
 }
 
 void MainGUI::initializeFeatureButtons() {
@@ -87,7 +92,7 @@ void MainGUI::initializeFeatureButtons() {
 }
 
 void MainGUI::onBtnReadDiskClicked() {
-	QString drive = QInputDialog::getText(this, "Đọc thông tin phân vùng", "Nhập đường dẫn ổ đĩa (ví dụ: C:)");
+	QString drive = QInputDialog::getText(this, "Đọc thông tin phân vùng", "Nhập đường dẫn ổ đĩa (ví dụ: F:)");
 	if (drive.isEmpty()) return;
 
 	// convert QString to LPCWSTR
@@ -106,24 +111,22 @@ void MainGUI::onBtnReadDiskClicked() {
             return;
         }
 
-        // parse boot sector into information
-        FAT32_BS* fat32_bs = nullptr;
-        NTFS_BS* ntfs_bs = nullptr;
-
-        if (fs == FileSystem::FAT32) {
-            fat32_bs = (FAT32_BS*)bootSector;
-            // display information in a new dialog, make dialog modal
-            FAT32BootSectorGUI* fat32BootSectorGUI = new FAT32BootSectorGUI(this, fat32_bs);
-            fat32BootSectorGUI->setWindowModality(Qt::ApplicationModal);
-            fat32BootSectorGUI->show();
-        }
-        else if (fs == FileSystem::NTFS) {
-            ntfs_bs = (NTFS_BS*)bootSector;
-        }
+        // display information in a new dialog, make dialog modal
+        if (bootSectorGUI) delete bootSectorGUI;
+        bootSectorGUI = new BootSectorGUI(this, bootSector);
+        bootSectorGUI->setWindowModality(Qt::ApplicationModal);
+        bootSectorGUI->show();
+    
     }
     catch (const char* error) {
-        std::string errorCode = "Mã lỗi: " + std::to_string(GetLastError()) + "  ";
-        QMessageBox::critical(this, "Lỗi", (std::string(error) + " " + errorCode).c_str());
+        int errorCode = GetLastError();
+        if (errorCode == 5) {
+            QMessageBox::critical(this, "Lỗi", "Vui lòng khởi chạy lại dưới quyền admin!");
+        }
+        else {
+            std::string errorStr = "Mã lỗi: " + std::to_string(errorCode) + "  ";
+            QMessageBox::critical(this, "Lỗi", (std::string(error) + " " + errorStr).c_str());
+        }
 	}
     catch (...) {
         std::string error = "Mã lỗi: " + std::to_string(GetLastError()) + "  ";

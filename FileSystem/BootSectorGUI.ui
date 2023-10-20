@@ -1,0 +1,423 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>BootSectorGUIClass</class>
+ <widget class="QMainWindow" name="BootSectorGUIClass">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>620</width>
+    <height>500</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>620</width>
+    <height>500</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>620</width>
+    <height>500</height>
+   </size>
+  </property>
+  <property name="baseSize">
+   <size>
+    <width>620</width>
+    <height>500</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Đọc thông tin boot sector FAT32</string>
+  </property>
+  <property name="unifiedTitleAndToolBarOnMac">
+   <bool>false</bool>
+  </property>
+  <widget class="QWidget" name="centralWidget">
+   <layout class="QGridLayout" name="gridLayout">
+    <property name="leftMargin">
+     <number>0</number>
+    </property>
+    <property name="topMargin">
+     <number>0</number>
+    </property>
+    <property name="rightMargin">
+     <number>0</number>
+    </property>
+    <property name="bottomMargin">
+     <number>0</number>
+    </property>
+    <item row="0" column="0">
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="tab">
+       <attribute name="title">
+        <string>Tab 1</string>
+       </attribute>
+       <widget class="QGroupBox" name="groupBox">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>20</y>
+          <width>591</width>
+          <height>421</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+          <fontweight>DemiBold</fontweight>
+         </font>
+        </property>
+        <property name="title">
+         <string>Thông tin phân vùng:</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_3">
+         <item row="0" column="0">
+          <widget class="QTableWidget" name="tblInfo">
+           <property name="font">
+            <font>
+             <pointsize>10</pointsize>
+             <bold>false</bold>
+            </font>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::NoFrame</enum>
+           </property>
+           <property name="editTriggers">
+            <set>QAbstractItemView::AnyKeyPressed|QAbstractItemView::DoubleClicked</set>
+           </property>
+           <property name="alternatingRowColors">
+            <bool>false</bool>
+           </property>
+           <property name="showGrid">
+            <bool>false</bool>
+           </property>
+           <attribute name="horizontalHeaderVisible">
+            <bool>true</bool>
+           </attribute>
+           <attribute name="verticalHeaderVisible">
+            <bool>false</bool>
+           </attribute>
+           <column>
+            <property name="text">
+             <string>Thông số</string>
+            </property>
+            <property name="background">
+             <color>
+              <red>255</red>
+              <green>255</green>
+              <blue>127</blue>
+             </color>
+            </property>
+            <property name="foreground">
+             <brush brushstyle="NoBrush">
+              <color alpha="255">
+               <red>0</red>
+               <green>0</green>
+               <blue>0</blue>
+              </color>
+             </brush>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Offset</string>
+            </property>
+            <property name="background">
+             <color>
+              <red>255</red>
+              <green>255</green>
+              <blue>127</blue>
+             </color>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Giá trị</string>
+            </property>
+            <property name="background">
+             <color>
+              <red>255</red>
+              <green>255</green>
+              <blue>127</blue>
+             </color>
+            </property>
+           </column>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </widget>
+      <widget class="QWidget" name="tab_2">
+       <attribute name="title">
+        <string>Tab 2</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_2">
+        <item row="0" column="0">
+         <widget class="QTableWidget" name="tblRawData">
+          <property name="font">
+           <font>
+            <pointsize>9</pointsize>
+           </font>
+          </property>
+          <property name="horizontalScrollBarPolicy">
+           <enum>Qt::ScrollBarAlwaysOff</enum>
+          </property>
+          <row>
+           <property name="text">
+            <string>000</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>010</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>020</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>030</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>040</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>050</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>060</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>070</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>080</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>090</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>010</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>0A0</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>0B0</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>0C0</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>0D0</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>0E0</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>0F0</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>100</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>110</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>120</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>130</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>140</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>150</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>160</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>170</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>180</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>190</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>1A0</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>1B0</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>1C0</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>1D0</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>1F0</string>
+           </property>
+          </row>
+          <column>
+           <property name="text">
+            <string>0</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>1</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>2</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>3</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>4</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>5</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>6</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>7</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>8</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>9</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>A</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>B</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>C</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>D</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>E</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>F</string>
+           </property>
+          </column>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+ </widget>
+ <layoutdefault spacing="6" margin="11"/>
+ <resources/>
+ <connections/>
+</ui>

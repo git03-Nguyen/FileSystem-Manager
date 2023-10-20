@@ -43,7 +43,10 @@
     <ClCompile Include="ReadSector.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FAT32BootSectorGUI.cpp">
+    <ClCompile Include="BootSectorGUI.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FAT32_NTFS.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -56,10 +59,7 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="FAT32.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="NTFS.h">
+    <ClInclude Include="FAT32_NTFS.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ReadSector.h">
@@ -67,12 +67,12 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <QtMoc Include="FAT32BootSectorGUI.h">
+    <QtMoc Include="BootSectorGUI.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>
   <ItemGroup>
-    <QtUic Include="FAT32BootSectorGUI.ui">
+    <QtUic Include="BootSectorGUI.ui">
       <Filter>Form Files</Filter>
     </QtUic>
   </ItemGroup>

@@ -7,10 +7,9 @@
 
 #include "ui_MainGUI.h"
 #include "ReadSector.h"
-#include "FAT32.h"
-#include "NTFS.h"
+#include "FAT32_NTFS.h"
 
-#include "FAT32BootSectorGUI.h"
+#include "BootSectorGUI.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainGUIClass; };
@@ -26,6 +25,7 @@ public:
 
 private:
     Ui::MainGUIClass *ui;
+    BootSectorGUI* bootSectorGUI;
     void initializeFeatureButtons();
     void onBtnReadDiskClicked();
 };
