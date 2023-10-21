@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>651</width>
+    <width>854</width>
     <height>583</height>
    </rect>
   </property>
@@ -43,7 +43,7 @@
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
-        <widget class="QTreeWidget" name="folderTree">
+        <widget class="QTreeWidget" name="treeFolder">
          <property name="font">
           <font>
            <pointsize>10</pointsize>
@@ -56,6 +56,16 @@
          <column>
           <property name="text">
            <string>Tên</string>
+          </property>
+          <property name="font">
+           <font>
+            <fontweight>DemiBold</fontweight>
+           </font>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Loại</string>
           </property>
           <property name="font">
            <font>
@@ -95,7 +105,27 @@
          </column>
          <column>
           <property name="text">
+           <string>Ngày truy cập</string>
+          </property>
+          <property name="font">
+           <font>
+            <fontweight>DemiBold</fontweight>
+           </font>
+          </property>
+         </column>
+         <column>
+          <property name="text">
            <string>Thuộc tính</string>
+          </property>
+          <property name="font">
+           <font>
+            <fontweight>DemiBold</fontweight>
+           </font>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Cluster bắt đầu</string>
           </property>
           <property name="font">
            <font>
@@ -119,93 +149,11 @@
          </font>
         </property>
         <property name="title">
-         <string>Thuộc tính chi tiết</string>
+         <string>Xem trước</string>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <item>
-          <widget class="QTableWidget" name="tblProperties">
-           <property name="font">
-            <font>
-             <pointsize>10</pointsize>
-             <bold>false</bold>
-            </font>
-           </property>
-           <property name="frameShape">
-            <enum>QFrame::NoFrame</enum>
-           </property>
-           <property name="showGrid">
-            <bool>false</bool>
-           </property>
-           <attribute name="verticalHeaderVisible">
-            <bool>false</bool>
-           </attribute>
-           <row>
-            <property name="text">
-             <string>New Row</string>
-            </property>
-           </row>
-           <row>
-            <property name="text">
-             <string>New Row</string>
-            </property>
-           </row>
-           <row>
-            <property name="text">
-             <string>New Row</string>
-            </property>
-           </row>
-           <row>
-            <property name="text">
-             <string>New Row</string>
-            </property>
-           </row>
-           <row>
-            <property name="text">
-             <string>New Row</string>
-            </property>
-           </row>
-           <row>
-            <property name="text">
-             <string>New Row</string>
-            </property>
-           </row>
-           <column>
-            <property name="text">
-             <string>Thuộc tính</string>
-            </property>
-            <property name="font">
-             <font>
-              <fontweight>DemiBold</fontweight>
-             </font>
-            </property>
-            <property name="textAlignment">
-             <set>AlignLeading|AlignVCenter</set>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Giá trị</string>
-            </property>
-            <property name="font">
-             <font>
-              <fontweight>DemiBold</fontweight>
-             </font>
-            </property>
-            <property name="textAlignment">
-             <set>AlignLeading|AlignVCenter</set>
-            </property>
-           </column>
-           <item row="0" column="0">
-            <property name="text">
-             <string>Ngày tạo</string>
-            </property>
-           </item>
-           <item row="0" column="1">
-            <property name="text">
-             <string>20/23/2303</string>
-            </property>
-           </item>
-          </widget>
+          <widget class="QPlainTextEdit" name="plainTextEdit"/>
          </item>
         </layout>
        </widget>

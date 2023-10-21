@@ -68,6 +68,37 @@ struct NTFS_BS {
 };
 #pragma pack(pop)
 
+#pragma pack(push, 1)
+struct FAT32_DirectoryEntry {
+	char name[8]; // 0x00
+	char ext[3]; // 0x08
+	uint8_t attr; // 0x0B
+	uint8_t reserved; // 0x0C
+	uint8_t cTimeTenth; // 0x0D
+	uint16_t cTime; // 0x0E
+	uint16_t cDate; // 0x10
+	uint16_t aDate; // 0x12
+	uint16_t firstClusHi; // 0x14
+	uint16_t wTime; // 0x16
+	uint16_t wDate; // 0x18
+	uint16_t firstClusLo; // 0x1A
+	uint32_t fileSize; // 0x1C
+};
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+struct FAT32_LFN_DirectoryEntry {
+	uint8_t seqNum; // 0x00
+	uint16_t name1[5]; // 0x01
+	uint8_t attr; // 0x0B
+	uint8_t type; // 0x0C
+	uint8_t checksum; // 0x0D
+	uint16_t name2[6]; // 0x0E
+	uint16_t firstClusLo; // 0x1C
+	uint16_t name3[2]; // 0x1E
+};
+#pragma pack(pop)
+
 std::string toHexString(uint8_t array[], int size = 1);
 
 #define _FAT32_BS_FOR_TEST  {															\

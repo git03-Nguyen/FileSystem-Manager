@@ -48,3 +48,34 @@ FileSystem readFileSystemType(uint8_t bootSector[]) {
     return FileSystem::Others;
 }
 
+std::vector<uint32_t> readClusterChainFat32(uint32_t cluster, std::string drive, FAT32_BS* bootSector) {
+    std::vector<uint32_t> clusterChain;
+    clusterChain.push_back(cluster);
+
+    int nextCluster = cluster;
+    bool loop = true;
+    while (loop) {
+		uint32_t* sector = new uint32_t[bootSector->bytesPerSec / 4] { 0 };
+        int entriesPerSector = bootSector->bytesPerSec / 4;
+
+        int startSector = bootSector->rsvdSec + nextCluster / entriesPerSector;
+        readSector(drive, startSector, (uint8_t*)sector);
+
+        while (true) {
+            int offset = nextCluster % entriesPerSector;
+            nextCluster = sector[offset] & 0x0FFFFFFF;
+            if (nextCluster == 0x0FFFFFFF) {
+                loop = false; // break outer loop
+                break;
+            }
+            clusterChain.push_back(nextCluster);
+            int nextStartSector = bootSector->rsvdSec + nextCluster / entriesPerSector;
+            if (nextStartSector != startSector) break; // break inner loop
+        }
+        delete[] sector;
+	}
+
+    return clusterChain;
+}
+
+
