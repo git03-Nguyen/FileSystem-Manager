@@ -5,6 +5,7 @@ BootSectorGUI::BootSectorGUI(QWidget *parent, void* fat32BS)
 	, ui(new Ui::BootSectorGUIClass())
 	, bootSector(fat32BS)
 {
+
 	ui->setupUi(this);
 	initializeGUI();
 }
@@ -22,6 +23,7 @@ void BootSectorGUI::initializeGUI() {
 
 	initializeRawData();
 	initializeInfo();
+
 }
 
 void BootSectorGUI::initializeRawData() {
@@ -113,14 +115,14 @@ void BootSectorGUI::initializeFat32Info() {
 	addInfoRow("Số sector/cluster", offsetof(FAT32_BS, secPerClus), std::to_string(bootSector->secPerClus));
 	addInfoRow("Số sector trước FAT", offsetof(FAT32_BS, rsvdSec), std::to_string(bootSector->rsvdSec));
 	addInfoRow("Số bảng FAT", offsetof(FAT32_BS, numFATs), std::to_string(bootSector->numFATs));
-	addInfoRow("Loại media", offsetof(FAT32_BS, media), toHexString(&bootSector->media));
+	addInfoRow("Loại đĩa", offsetof(FAT32_BS, media), toHexString(&bootSector->media));
 	addInfoRow("Số sector/track", offsetof(FAT32_BS, secPerTrk), std::to_string(bootSector->secPerTrk));
 	addInfoRow("Số head", offsetof(FAT32_BS, numHeads), std::to_string(bootSector->numHeads));
-	addInfoRow("Số sector ẩn", offsetof(FAT32_BS, hiddSecs), std::to_string(bootSector->hiddSecs));
+	addInfoRow("Sector bắt đầu của ổ đĩa logic", offsetof(FAT32_BS, hiddSecs), std::to_string(bootSector->hiddSecs));
 	addInfoRow("Tổng số sector trên phân vùng", offsetof(FAT32_BS, numSecs), std::to_string(bootSector->numSecs));
 	addInfoRow("Số sector/FAT", offsetof(FAT32_BS, secPerFAT), std::to_string(bootSector->secPerFAT));
 	addInfoRow("Flags", offsetof(FAT32_BS, extFlags), toHexString((uint8_t*)&bootSector->extFlags, sizeof(bootSector->extFlags)));
-	addInfoRow("Phiên bản FAT32", offsetof(FAT32_BS, majFAT32Ver), std::to_string(bootSector->majFAT32Ver) + "." + std::to_string(bootSector->minFAT32Ver));
+	addInfoRow("Phiên bản FAT32", offsetof(FAT32_BS, minFAT32Ver), std::to_string(bootSector->majFAT32Ver) + "." + std::to_string(bootSector->minFAT32Ver));
 	addInfoRow("Cluster đầu tiên của Root Directory", offsetof(FAT32_BS, rootClus), std::to_string(bootSector->rootClus));
 	addInfoRow("FS Information Sector", offsetof(FAT32_BS, infoFS), std::to_string(bootSector->infoFS));
 	addInfoRow("Sector chứa backup boot sector", offsetof(FAT32_BS, backupBootSec), std::to_string(bootSector->backupBootSec));
@@ -142,10 +144,10 @@ void BootSectorGUI::initializeNTFSInfo() {
 	addInfoRow("OEM ID", offsetof(NTFS_BS, OEM_id), std::string(bootSector->OEM_id, sizeof(bootSector->OEM_id)));
 	addInfoRow("Số byte/sector", offsetof(NTFS_BS, bytesPerSec), std::to_string(bootSector->bytesPerSec));
 	addInfoRow("Số sector/cluster", offsetof(NTFS_BS, secPerClus), std::to_string(bootSector->secPerClus));
-	addInfoRow("Loại media", offsetof(NTFS_BS, media), toHexString(&bootSector->media));
+	addInfoRow("Loại đĩa", offsetof(NTFS_BS, media), toHexString(&bootSector->media));
 	addInfoRow("Số sector/track", offsetof(NTFS_BS, secPerTrk), std::to_string(bootSector->secPerTrk));
 	addInfoRow("Số head", offsetof(NTFS_BS, numHeads), std::to_string(bootSector->numHeads));
-	addInfoRow("Số sector ẩn", offsetof(NTFS_BS, hiddSecs), std::to_string(bootSector->hiddSecs));
+	addInfoRow("Sector bắt đầu của ổ đĩa logic", offsetof(NTFS_BS, hiddSecs), std::to_string(bootSector->hiddSecs));
 	addInfoRow("Tổng số sector trên phân vùng", offsetof(NTFS_BS, numSecs), std::to_string(bootSector->numSecs));
 	addInfoRow("Cluster đầu tiên của MFT", offsetof(NTFS_BS, clusOfMFT), std::to_string(bootSector->clusOfMFT));
 	addInfoRow("Cluster đầu tiên của Mirror MFT", offsetof(NTFS_BS, clusOfMirrMFT), std::to_string(bootSector->clusOfMirrMFT));

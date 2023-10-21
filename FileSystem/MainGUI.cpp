@@ -3,14 +3,14 @@
 MainGUI::MainGUI(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainGUIClass())
+    , bootSectorGUI(nullptr)
+    , treeFolderGUI(nullptr)
 {
     ui->setupUi(this);
     this->setWindowIcon(QIcon("./assets/os.png"));
 
-    initializeFeatureButtons();
-
-    bootSectorGUI = nullptr;
-    treeFolderGUI = nullptr;
+    initializeReadDisk();
+    initializeDisplayTree();
 }
 
 MainGUI::~MainGUI()
@@ -18,84 +18,83 @@ MainGUI::~MainGUI()
     delete ui;
     delete bootSectorGUI;
     delete treeFolderGUI;
+    for (auto& gui : listGUI) {
+		delete gui;
+	}
 }
 
-void MainGUI::initializeFeatureButtons() {
+void MainGUI::initializeReadDisk() {
+    QHBoxLayout* pLayout = new QHBoxLayout();
+    QLabel* pIconLabel = new QLabel();
+    QLabel* pTextLabel = new QLabel();
+    listGUI.push_back(pIconLabel);
+    listGUI.push_back(pTextLabel);
+    listGUI.push_back(pLayout);
 
-    // For button ReadDisk
-    QHBoxLayout* pLayout1 = new QHBoxLayout();
-    QLabel* pIconLabel1 = new QLabel();
-    QLabel* pTextLabel1 = new QLabel();
+    pIconLabel->setPixmap(QPixmap("./assets/floppydisk.png"));
+    pIconLabel->setFixedSize(50, 50);
+    pIconLabel->setScaledContents(true);
+    pIconLabel->setAlignment(Qt::AlignCenter);
+    pIconLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
-    pIconLabel1->setPixmap(QPixmap("./assets/floppydisk.png"));
-    pIconLabel1->setFixedSize(50, 50);
-    pIconLabel1->setScaledContents(true);
+    pTextLabel->setText("Đọc thông tin phân vùng từ Boot sector");
+    pTextLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    pTextLabel->setWordWrap(true);
+    pTextLabel->setTextInteractionFlags(Qt::NoTextInteraction);
+    pTextLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    pIconLabel1->setAlignment(Qt::AlignCenter);
-    pIconLabel1->setMouseTracking(false);
-    pIconLabel1->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    pLayout->addWidget(pIconLabel);
+    pLayout->addWidget(pTextLabel);
+    pLayout->setSpacing(20);
+    pLayout->setContentsMargins(10, 5, 5, 5);
 
-    pTextLabel1->setText("Đọc thông tin phân vùng từ Boot sector");
-    pTextLabel1->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    pTextLabel1->setWordWrap(true);
-    pTextLabel1->setTextInteractionFlags(Qt::NoTextInteraction);
-    pTextLabel1->setMouseTracking(false);
-    pTextLabel1->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-
-    pLayout1->addWidget(pIconLabel1);
-    pLayout1->addWidget(pTextLabel1);
-    pLayout1->setSpacing(20);
-    pLayout1->setContentsMargins(10, 5, 5, 5);
-
-    QPushButton* btnReadDisk = ui->btnReadDisk;
-    btnReadDisk->setStyleSheet(
+    ui->btnReadDisk->setStyleSheet(
         "QPushButton {background-color: transparent; border: none; border-radius: 5px;}"
         "QPushButton:hover {background-color: #e6e6e6; border: 1px solid gray;}"
         "QPushButton:pressed {background-color: #cccccc;}"
     );
-    btnReadDisk->setLayout(pLayout1);
 
-    // do the same thing for btnDisplayTree
-    QHBoxLayout* pLayout2 = new QHBoxLayout();
-    QLabel* pIconLabel2 = new QLabel();
-    QLabel* pTextLabel2 = new QLabel();
-
-    pIconLabel2->setPixmap(QPixmap("./assets/folder_yellow.png"));
-    pIconLabel2->setFixedSize(50, 50);
-    pIconLabel2->setScaledContents(true);
-
-    pIconLabel2->setAlignment(Qt::AlignCenter);
-    pIconLabel2->setMouseTracking(false);
-    pIconLabel2->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-
-    pTextLabel2->setText("Hiển thị cây thư mục và đọc tập tin");
-    pTextLabel2->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    pTextLabel2->setWordWrap(true);
-    pTextLabel2->setTextInteractionFlags(Qt::NoTextInteraction);
-    pTextLabel2->setMouseTracking(false);
-    pTextLabel2->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-
-    pLayout2->addWidget(pIconLabel2);
-    pLayout2->addWidget(pTextLabel2);
-    pLayout2->setSpacing(20);
-    pLayout2->setContentsMargins(10, 5, 5, 5);
-
-    QPushButton* btnDisplayTree = ui->btnDisplayTree;
-    btnDisplayTree->setStyleSheet(
-        "QPushButton {background-color: transparent; border: none; border-radius: 5px;}"
-        "QPushButton:hover {background-color: #e6e6e6; border: 1px solid gray;}"
-        "QPushButton:pressed {background-color: #cccccc;}"
-    );
-    btnDisplayTree->setLayout(pLayout2);
+    ui->btnReadDisk->setLayout(pLayout);
 
     // when click on btnReadDisk, open a dialog to enter drive letter
-    connect(btnReadDisk, &QPushButton::clicked, this, &MainGUI::onBtnReadDiskClicked);
+    connect(ui->btnReadDisk, &QPushButton::clicked, this, &MainGUI::onBtnReadDiskClicked);
+}
+
+void MainGUI::initializeDisplayTree() {
+    QHBoxLayout* pLayout = new QHBoxLayout();
+    QLabel* pIconLabel = new QLabel();
+    QLabel* pTextLabel = new QLabel();
+    listGUI.push_back(pIconLabel);
+    listGUI.push_back(pTextLabel);
+    listGUI.push_back(pLayout);
+
+    pIconLabel->setPixmap(QPixmap("./assets/folder_yellow.png"));
+    pIconLabel->setFixedSize(50, 50);
+    pIconLabel->setScaledContents(true);
+    pIconLabel->setAlignment(Qt::AlignCenter);
+    pIconLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+
+    pTextLabel->setText("Hiển thị cây thư mục và đọc tập tin");
+    pTextLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    pTextLabel->setWordWrap(true);
+    pTextLabel->setTextInteractionFlags(Qt::NoTextInteraction);
+    pTextLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    pLayout->addWidget(pIconLabel);
+    pLayout->addWidget(pTextLabel);
+    pLayout->setSpacing(20);
+    pLayout->setContentsMargins(10, 5, 5, 5);
+
+    ui->btnDisplayTree->setStyleSheet(
+        "QPushButton {background-color: transparent; border: none; border-radius: 5px;}"
+        "QPushButton:hover {background-color: #e6e6e6; border: 1px solid gray;}"
+        "QPushButton:pressed {background-color: #cccccc;}"
+    );
+
+    ui->btnDisplayTree->setLayout(pLayout);
 
     // when click on btnDisplayTree, open a dialog to enter drive letter
-    // then display tree
-    connect(btnDisplayTree, &QPushButton::clicked, this, &MainGUI::onBtnDisplayTreeClicked);
-
-
+    connect(ui->btnDisplayTree, &QPushButton::clicked, this, &MainGUI::onBtnDisplayTreeClicked);
 }
 
 void MainGUI::onBtnReadDiskClicked() {
@@ -153,9 +152,10 @@ void MainGUI::onBtnDisplayTreeClicked() {
 
         // display information in a new dialog, make dialog modal
         if (treeFolderGUI) delete treeFolderGUI;
-        treeFolderGUI = new TreeFolderGUI(this, bootSector);
+        treeFolderGUI = new TreeFolderGUI(this, bootSector, drive.toStdString());
         treeFolderGUI->setWindowModality(Qt::ApplicationModal);
         treeFolderGUI->show();
+        
 
     }
     catch (const char* error) {

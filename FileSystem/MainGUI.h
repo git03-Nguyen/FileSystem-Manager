@@ -5,6 +5,8 @@
 #include <QInputDialog>
 #include <QMessageBox>
 
+#include <vector>
+
 #include "ui_MainGUI.h"
 #include "ReadSector.h"
 #include "FAT32_NTFS.h"
@@ -28,7 +30,11 @@ private:
     Ui::MainGUIClass *ui;
     BootSectorGUI* bootSectorGUI;
     TreeFolderGUI* treeFolderGUI;
-    void initializeFeatureButtons();
+    std::vector<QObject*> listGUI;
+
+    void initializeReadDisk();
+    void initializeDisplayTree();
+
     void onBtnReadDiskClicked();
     void onBtnDisplayTreeClicked();
 };

@@ -14,7 +14,10 @@
    <string>TreeFolderGUI</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <layout class="QVBoxLayout" name="verticalLayout_4">
+   <property name="autoFillBackground">
+    <bool>false</bool>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout_4" stretch="4,3">
     <property name="leftMargin">
      <number>5</number>
     </property>
@@ -40,77 +43,66 @@
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
-        <widget class="QTreeWidget" name="treeWidget">
+        <widget class="QTreeWidget" name="folderTree">
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+           <bold>false</bold>
+          </font>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::NoFrame</enum>
+         </property>
          <column>
           <property name="text">
-           <string>F:\</string>
+           <string>Tên</string>
           </property>
-         </column>
-         <column>
-          <property name="text">
-           <string>Ngày tạo</string>
+          <property name="font">
+           <font>
+            <fontweight>DemiBold</fontweight>
+           </font>
           </property>
          </column>
          <column>
           <property name="text">
            <string>Kích thước</string>
           </property>
+          <property name="font">
+           <font>
+            <fontweight>DemiBold</fontweight>
+           </font>
+          </property>
          </column>
-         <item>
+         <column>
           <property name="text">
-           <string>New Item.txt</string>
+           <string>Ngày tạo</string>
           </property>
+          <property name="font">
+           <font>
+            <fontweight>DemiBold</fontweight>
+           </font>
+          </property>
+         </column>
+         <column>
           <property name="text">
-           <string>20/11/2023</string>
+           <string>Ngày sửa</string>
           </property>
+          <property name="font">
+           <font>
+            <fontweight>DemiBold</fontweight>
+           </font>
+          </property>
+         </column>
+         <column>
           <property name="text">
-           <string>1234324KB</string>
+           <string>Thuộc tính</string>
           </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>My Folder</string>
+          <property name="font">
+           <font>
+            <fontweight>DemiBold</fontweight>
+           </font>
           </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <item>
-           <property name="text">
-            <string>Hehe.bin</string>
-           </property>
-           <property name="text">
-            <string>20/23/2323</string>
-           </property>
-           <property name="text">
-            <string>2313123KB</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>gagaga.sys</string>
-           </property>
-           <property name="text">
-            <string>1/1/2323</string>
-           </property>
-           <property name="text">
-            <string>321321KB</string>
-           </property>
-          </item>
-         </item>
-         <item>
-          <property name="text">
-           <string>Hhaha.bin</string>
-          </property>
-          <property name="text">
-           <string>10/10/2023</string>
-          </property>
-          <property name="text">
-           <string>123213KB</string>
-          </property>
-         </item>
+         </column>
         </widget>
        </item>
       </layout>
@@ -131,7 +123,19 @@
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <item>
-          <widget class="QTableWidget" name="tableWidget">
+          <widget class="QTableWidget" name="tblProperties">
+           <property name="font">
+            <font>
+             <pointsize>10</pointsize>
+             <bold>false</bold>
+            </font>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::NoFrame</enum>
+           </property>
+           <property name="showGrid">
+            <bool>false</bool>
+           </property>
            <attribute name="verticalHeaderVisible">
             <bool>false</bool>
            </attribute>
@@ -169,10 +173,26 @@
             <property name="text">
              <string>Thuộc tính</string>
             </property>
+            <property name="font">
+             <font>
+              <fontweight>DemiBold</fontweight>
+             </font>
+            </property>
+            <property name="textAlignment">
+             <set>AlignLeading|AlignVCenter</set>
+            </property>
            </column>
            <column>
             <property name="text">
              <string>Giá trị</string>
+            </property>
+            <property name="font">
+             <font>
+              <fontweight>DemiBold</fontweight>
+             </font>
+            </property>
+            <property name="textAlignment">
+             <set>AlignLeading|AlignVCenter</set>
             </property>
            </column>
            <item row="0" column="0">

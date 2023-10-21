@@ -30,4 +30,5 @@ private:
 	void initializeNTFSInfo();
 	
 	void addInfoRow(std::string name, int offset, std::string value);
+
 };
