@@ -58,6 +58,10 @@ void TreeFolderGUI::initializeTreeFolderFAT32() {
 					continue;
 				}
 
+				if (sector[offset] == 0x05) {
+					sector[offset] = 0xE5;
+				}
+
 				// read the entry
 				FAT32_DirectoryEntry* entry = (FAT32_DirectoryEntry*)(sector + offset);
 				if (entry->attr == 0x0F) {
@@ -81,7 +85,7 @@ void TreeFolderGUI::initializeTreeFolderFAT32() {
 					}
 				}
 			}
-			delete sector;
+			delete[] sector;
 		}
 	}
 
@@ -99,14 +103,19 @@ void TreeFolderGUI::addItemToTree(FAT32_DirectoryEntry* entry, std::wstring name
 
 	// get name
 	if (name == L"") {
-		std::string fileName = std::string(entry->name, sizeof(entry->name)) + std::string(entry->ext, sizeof(entry->ext));
-		// trim spaces
-		fileName.erase(fileName.find_last_not_of(" ") + 1);
-		name = std::wstring(fileName.begin(), fileName.end());
+		std::string fileName = std::string(entry->name, sizeof(entry->name));
+		std::string fileExt = std::string(entry->ext, sizeof(entry->ext));
+		// trim spaces in end of string
+		fileName.erase(fileName.find_last_not_of(' ') + 1);
+		fileExt.erase(fileExt.find_last_not_of(' ') + 1);
+		// convert to wstring
+		std::wstring wFileName = std::wstring(fileName.begin(), fileName.end());
+		std::wstring wFileExt = std::wstring(fileExt.begin(), fileExt.end());
+		name = wFileName + L"." + wFileExt;
 	}
 
-	// my name string has some garbage characters at the end, remove them until the first null character
-	name.erase(name.find_first_of(L'\0'));
+	// my name string may contain 0xFFFF at the end, so I have to trim it
+	name.erase(name.find_last_not_of(L'\xFFFF') + 1);
 
 	// get type
 	std::string type = "";
