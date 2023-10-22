@@ -19,11 +19,25 @@ TreeFolderGUI::~TreeFolderGUI()
 }
 
 void TreeFolderGUI::initializeTreeFolder() {
+	drive[0] = toupper(drive[0]);
+	currentPath = drive + "\\";
+	ui->txtPath->setText(QString::fromStdString(currentPath));
+
+	// set the first column of the tree larger
+	ui->treeFolder->setColumnWidth(0, 200);
+	// set the second column smaller
+	ui->treeFolder->setColumnWidth(1, 60);
+	ui->treeFolder->setColumnWidth(2, 90);
+	ui->treeFolder->setColumnWidth(7, 70);
+
+
 	FileSystem fileSystem = readFileSystemType((uint8_t*)bootSector);
 	if (fileSystem == FileSystem::FAT32) {
+		this->setWindowTitle("Cây thư mục FAT32");
 		initializeTreeFolderFAT32();
 	}
 	else if (fileSystem == FileSystem::NTFS) {
+		this->setWindowTitle("Cây thư mục NTFS");
 		initializeTreeFolderNTFS();
 	}
 	else {
@@ -127,7 +141,13 @@ void TreeFolderGUI::addItemToTree(FAT32_DirectoryEntry* entry, std::wstring name
 	}
 
 	// get size
-	std::string size = std::to_string(entry->fileSize);
+	std::string size;
+	if (entry->attr & 0x10) {
+		size = "";
+	}
+	else {
+		size = std::to_string(entry->fileSize) + " B";
+	}
 
 	// get date created
 	std::string dateCreated = "";
@@ -139,7 +159,32 @@ void TreeFolderGUI::addItemToTree(FAT32_DirectoryEntry* entry, std::wstring name
 	std::string dateAccessed = "";
 
 	// get attributes
-	std::string attributes = toHexString(&entry->attr, sizeof(entry->attr));
+	std::string attributes = "";
+	if (entry->attr & 0x01) {
+		attributes += "Read-only, ";
+	}
+	if (entry->attr & 0x02) {
+		attributes += "Hidden, ";
+	}
+	if (entry->attr & 0x04) {
+		attributes += "System, ";
+	}
+	if (entry->attr & 0x08) {
+		attributes += "Volume label, ";
+	}
+	if (entry->attr & 0x10) {
+		attributes += "Directory, ";
+	}
+	if (entry->attr & 0x20) {
+		attributes += "Archive, ";
+	}
+	if (entry->attr & 0x40) {
+		attributes += "Device, ";
+	}
+	if (entry->attr & 0x80) {
+		attributes += "Reserved, ";
+	}
+	attributes.erase(attributes.find_last_not_of(", ") + 1);
 
 	// get cluster start
 	std::string clusterStart = std::to_string(entry->firstClusHi << 16 | entry->firstClusLo);
@@ -156,9 +201,8 @@ void TreeFolderGUI::addItemToTree(FAT32_DirectoryEntry* entry, std::wstring name
 	item->setText(6, QString::fromStdString(attributes));
 	item->setText(7, QString::fromStdString(clusterStart));
 
-
-
-
+	item->setTextAlignment(2, Qt::AlignRight);
+	item->setTextAlignment(7, Qt::AlignRight);
 
 	
 }

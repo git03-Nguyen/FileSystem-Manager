@@ -25,6 +25,7 @@ private:
 	Ui::TreeFolderGUIClass *ui;
 	void* bootSector;
 	std::string drive;
+	std::string currentPath;
 	std::vector<std::wstring> nameForEachItem;
 
 

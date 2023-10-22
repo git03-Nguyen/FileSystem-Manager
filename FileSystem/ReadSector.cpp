@@ -64,7 +64,7 @@ std::vector<uint32_t> readClusterChainFat32(uint32_t cluster, std::string drive,
         while (true) {
             int offset = nextCluster % entriesPerSector;
             nextCluster = sector[offset] & 0x0FFFFFFF;
-            if (nextCluster == 0x0FFFFFFF) {
+            if (nextCluster >= 0x0FFFFFF7) {
                 loop = false; // break outer loop
                 break;
             }

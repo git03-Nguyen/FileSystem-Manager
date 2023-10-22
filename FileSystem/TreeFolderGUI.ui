@@ -43,6 +43,13 @@
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
+        <widget class="QLineEdit" name="txtPath">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QTreeWidget" name="treeFolder">
          <property name="font">
           <font>
@@ -52,6 +59,9 @@
          </property>
          <property name="frameShape">
           <enum>QFrame::NoFrame</enum>
+         </property>
+         <property name="sortingEnabled">
+          <bool>true</bool>
          </property>
          <column>
           <property name="text">
@@ -125,7 +135,7 @@
          </column>
          <column>
           <property name="text">
-           <string>Cluster bắt đầu</string>
+           <string>Cluster no.</string>
           </property>
           <property name="font">
            <font>
@@ -153,7 +163,20 @@
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <item>
-          <widget class="QPlainTextEdit" name="plainTextEdit"/>
+          <widget class="QPlainTextEdit" name="plainTextEdit">
+           <property name="font">
+            <font>
+             <pointsize>10</pointsize>
+             <bold>false</bold>
+            </font>
+           </property>
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+           <property name="placeholderText">
+            <string/>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>

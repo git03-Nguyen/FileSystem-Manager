@@ -16,7 +16,6 @@ BootSectorGUI::~BootSectorGUI()
 }
 
 void BootSectorGUI::initializeGUI() {
-	this->setWindowIcon(QIcon("./assets/folder_yellow.png"));
 
 	ui->tabWidget->setTabText(0, "Chi tiết");
 	ui->tabWidget->setTabText(1, "Byte thô");
