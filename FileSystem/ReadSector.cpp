@@ -49,6 +49,9 @@ FileSystem readFileSystemType(uint8_t bootSector[]) {
 }
 
 std::vector<uint32_t> readClusterChainFat32(uint32_t cluster, std::string drive, FAT32_BS* bootSector) {
+    // if cluster is 0 or 1, return empty vector
+    if (cluster <= 1) return std::vector<uint32_t>();
+
     std::vector<uint32_t> clusterChain;
     clusterChain.push_back(cluster);
 

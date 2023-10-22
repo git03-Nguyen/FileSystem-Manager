@@ -5,6 +5,7 @@
 #include "ui_TreeFolderGUI.h"
 
 #include <stack>
+#include <iostream>
 
 #include "FAT32_NTFS.h"
 #include "ReadSector.h"
@@ -23,18 +24,23 @@ public:
 
 private:
 	Ui::TreeFolderGUIClass *ui;
-	void* bootSector;
+	uint8_t* bootSector;
 	std::string drive;
-	std::string currentPath;
-	std::vector<std::wstring> nameForEachItem;
-
+	std::wstring currentPath;
+	std::stack<uint32_t> stackCluster;
 
 	void initializeTreeFolder();
+
 	void initializeTreeFolderFAT32();
+	void displayCurrentFolderFAT32(std::string drive, uint32_t cluster, FAT32_BS* bootSector);
+
 	void initializeTreeFolderNTFS();
 	
 	void addItemToTree(FAT32_DirectoryEntry* entry, std::wstring name = L"");
 
 	std::wstring getNameLFN(std::stack<FAT32_LFN_DirectoryEntry> stackLFN);
+
+
+	void onTreeItemDoubleClicked(QTreeWidgetItem* item, int column);
 
 };
