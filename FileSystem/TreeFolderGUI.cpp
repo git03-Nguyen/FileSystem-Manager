@@ -144,7 +144,8 @@ void TreeFolderGUI::addItemToTree(FAT32_DirectoryEntry* entry, std::wstring name
 	// get cluster start
 	std::string clusterStart = std::to_string(entry->firstClusHi << 16 | entry->firstClusLo);
 
-	// add to tree widget
+
+
 	QTreeWidgetItem* item = new QTreeWidgetItem(ui->treeFolder);
 	item->setText(0, QString::fromStdWString(name));
 	item->setText(1, QString::fromStdString(type));
