@@ -151,8 +151,8 @@
     <property name="title">
      <string>Trợ giúp</string>
     </property>
-    <addaction name="actionTh_ng_tin_nh_m"/>
-    <addaction name="actionH_ng_d_n"/>
+    <addaction name="actionInfo"/>
+    <addaction name="actionTutorial"/>
    </widget>
    <addaction name="menuTu_ch_n"/>
    <addaction name="menuTr_gi_p"/>
@@ -171,12 +171,12 @@
     <string>Thoát</string>
    </property>
   </action>
-  <action name="actionTh_ng_tin_nh_m">
+  <action name="actionInfo">
    <property name="text">
     <string>Thông tin nhóm</string>
    </property>
   </action>
-  <action name="actionH_ng_d_n">
+  <action name="actionTutorial">
    <property name="text">
     <string>Hướng dẫn</string>
    </property>
