@@ -1,18 +1,26 @@
 #pragma once
 
 #include <Windows.h>
+
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <sstream>
+#include <iomanip>
 
 #include "FAT32_NTFS.h"
 
-#define _SECTOR_SIZE 512
+// read a sector from a drive
+DWORD readSector(std::string drive, uint64_t byteOffset, uint8_t sector[]);
 
-enum class FileSystem {FAT32, NTFS, Others};
+// read a cluster from a drive
+DWORD readCluster(std::string drive, uint64_t byteOffset, uint8_t cluster[], int clusterSize);
 
-DWORD readSector(std::string drive, int readPoint, uint8_t sector[]);
+// get the file system type of a drive
+FileSystem getFileSystemType(uint8_t bootSector[]);
 
-FileSystem readFileSystemType(uint8_t bootSector[]);
-
+// read the cluster chain of a file/folder
 std::vector<uint32_t> readClusterChainFat32(uint32_t cluster, std::string drive, FAT32_BS* bootSector);
+
+// helper function to convert a uint8_t array to a hex string
+std::string toHexString(uint8_t array[], int size = 1);

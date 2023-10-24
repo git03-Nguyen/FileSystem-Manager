@@ -1,13 +1,11 @@
 #pragma once
 
 #include <QMainWindow>
-#include <string>
 #include "ui_TreeFolderGUI.h"
 
+#include <string>
 #include <stack>
-#include <iostream>
 
-#include "FAT32_NTFS.h"
 #include "ReadSector.h"
 
 QT_BEGIN_NAMESPACE
@@ -19,28 +17,39 @@ class TreeFolderGUI : public QMainWindow
 	Q_OBJECT
 
 public:
-	TreeFolderGUI(QWidget *parent = nullptr, void* bootSector = nullptr, std::string drive = "");
+	TreeFolderGUI(QWidget *parent = nullptr, uint8_t* bootSector = nullptr, std::string drive = "");
 	~TreeFolderGUI();
 
 private:
 	Ui::TreeFolderGUIClass *ui;
 	uint8_t* bootSector;
+	FileSystem fileSystemType;
 	std::string drive;
 	std::wstring currentPath;
 	std::stack<uint32_t> stackCluster;
 
+	// Initialize GUI
 	void initializeTreeFolder();
-
 	void initializeTreeFolderFAT32();
-	void displayCurrentFolderFAT32(std::string drive, uint32_t cluster, FAT32_BS* bootSector);
-
 	void initializeTreeFolderNTFS();
-	
-	void addItemToTree(FAT32_DirectoryEntry* entry, std::wstring name = L"");
 
-	std::wstring getNameLFN(std::stack<FAT32_LFN_DirectoryEntry> stackLFN);
+	// Display current folder
+	void displayCurrentFolder(std::string drive, uint32_t cluster, FAT32_BS* bootSector);
+	void displayCurrentFolder(std::string drive, uint64_t cluster, NTFS_BS* bootSector);
 
+	// Helper to add file/folder to tree
+	void addItemToTreeFAT32(const FAT32_DirectoryEntry& entry, std::wstring name = L"");
+	void addItemToTreeNTFS(NTFS_FileRecord* entry, std::wstring name = L"");
 
-	void onTreeItemDoubleClicked(QTreeWidgetItem* item, int column);
+	// Handle double click on file/folder
+	void onTreeItemDoubleClickedFAT32(QTreeWidgetItem* item, int column);
+	void onTreeItemDoubleClickedNTFS(QTreeWidgetItem* item, int column);
+
+	// Helper to get name of file/folder FAT32
+	std::wstring getFileNameFAT32(std::stack<FAT32_LFN_DirectoryEntry>& stackLFN);
+
+	// Helper to open file/folder FAT32
+	void openFileFAT32(QTreeWidgetItem* item);
+	void openFolderFAT32(QTreeWidgetItem* item);
 
 };

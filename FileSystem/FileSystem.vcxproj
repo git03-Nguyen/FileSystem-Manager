@@ -90,7 +90,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="BootSectorGUI.cpp" />
-    <ClCompile Include="FAT32_NTFS.cpp" />
     <ClCompile Include="ReadSector.cpp" />
     <ClCompile Include="TreeFolderGUI.cpp" />
     <QtRcc Include="MainGUI.qrc" />

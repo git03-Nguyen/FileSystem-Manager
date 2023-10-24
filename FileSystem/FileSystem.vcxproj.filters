@@ -46,9 +46,6 @@
     <ClCompile Include="BootSectorGUI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FAT32_NTFS.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="TreeFolderGUI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

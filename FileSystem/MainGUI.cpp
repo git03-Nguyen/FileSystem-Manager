@@ -24,6 +24,8 @@ MainGUI::~MainGUI()
 }
 
 void MainGUI::initializeReadDisk() {
+
+    // Style for button ReadDisk
     QHBoxLayout* pLayout = new QHBoxLayout();
     QLabel* pIconLabel = new QLabel();
     QLabel* pTextLabel = new QLabel();
@@ -56,11 +58,13 @@ void MainGUI::initializeReadDisk() {
 
     ui->btnReadDisk->setLayout(pLayout);
 
-    // when click on btnReadDisk, open a dialog to enter drive letter
+    // when click on btnReadDisk, call function handle onBtnReadDiskClicked
     connect(ui->btnReadDisk, &QPushButton::clicked, this, &MainGUI::onBtnReadDiskClicked);
 }
 
 void MainGUI::initializeDisplayTree() {
+
+    // Style for button DisplayTree
     QHBoxLayout* pLayout = new QHBoxLayout();
     QLabel* pIconLabel = new QLabel();
     QLabel* pTextLabel = new QLabel();
@@ -93,26 +97,28 @@ void MainGUI::initializeDisplayTree() {
 
     ui->btnDisplayTree->setLayout(pLayout);
 
-    // when click on btnDisplayTree, open a dialog to enter drive letter
+    // when click on btnDisplayTree, call function handle onBtnDisplayTreeClicked
     connect(ui->btnDisplayTree, &QPushButton::clicked, this, &MainGUI::onBtnDisplayTreeClicked);
 }
 
 void MainGUI::onBtnReadDiskClicked() {
+    // Open a dialog to enter drive letter
 	QString drive = QInputDialog::getText(this, "Đọc thông tin phân vùng", "Nhập đường dẫn ổ đĩa (ví dụ: F:)");
 	if (drive.isEmpty()) return;
 
     try {
         // read boot sector
-        uint8_t bootSector[_SECTOR_SIZE] = { 0 };
+        uint8_t bootSector[BOOT_SECTOR_SIZE] = { 0 };
         DWORD bytesRead = readSector(drive.toStdString(), 0, bootSector);
+
         // read file system type
-        FileSystem fs = readFileSystemType(bootSector);
-        if (fs == FileSystem::Others) {
+        FileSystem fs = getFileSystemType(bootSector);
+        if (fs == FileSystem::UNKNOWN) {
             QMessageBox::critical(this, "Lỗi", "Hệ thống tập tin không được hỗ trợ!");
             return;
         }
 
-        // display information in a new dialog, make dialog modal
+        // display information of partition in a new dialog
         if (bootSectorGUI) delete bootSectorGUI;
         bootSectorGUI = new BootSectorGUI(this, bootSector);
         bootSectorGUI->setWindowModality(Qt::ApplicationModal);
@@ -136,26 +142,27 @@ void MainGUI::onBtnReadDiskClicked() {
 }
 
 void MainGUI::onBtnDisplayTreeClicked() {
+    // Open a dialog to enter drive letter
     QString drive = QInputDialog::getText(this, "Hiển thị cây thư mục gốc", "Nhập đường dẫn ổ đĩa (ví dụ: F:)");
     if (drive.isEmpty()) return;
 
     try {
         // read boot sector
-        uint8_t bootSector[_SECTOR_SIZE] = { 0 };
+        uint8_t bootSector[BOOT_SECTOR_SIZE] = { 0 };
         DWORD bytesRead = readSector(drive.toStdString(), 0, bootSector);
+
         // read file system type
-        FileSystem fs = readFileSystemType(bootSector);
-        if (fs == FileSystem::Others) {
+        FileSystem fs = getFileSystemType(bootSector);
+        if (fs == FileSystem::UNKNOWN) {
             QMessageBox::critical(this, "Lỗi", "Hệ thống tập tin không được hỗ trợ!");
             return;
         }
 
-        // display information in a new dialog, make dialog modal
+        // display tree folder in a new dialog
         if (treeFolderGUI) delete treeFolderGUI;
         treeFolderGUI = new TreeFolderGUI(this, bootSector, drive.toStdString());
         treeFolderGUI->setWindowModality(Qt::ApplicationModal);
         treeFolderGUI->show();
-        
 
     }
     catch (const char* error) {

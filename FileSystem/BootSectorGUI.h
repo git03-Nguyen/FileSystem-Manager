@@ -4,7 +4,6 @@
 #include <QStandardItemModel>
 #include "ui_BootSectorGUI.h"
 
-#include "FAT32_NTFS.h"
 #include "ReadSector.h"
 
 QT_BEGIN_NAMESPACE
@@ -16,19 +15,23 @@ class BootSectorGUI : public QMainWindow
 	Q_OBJECT
 
 public:
-	BootSectorGUI(QWidget *parent = nullptr, void* bootSector = nullptr);
+	BootSectorGUI(QWidget *parent = nullptr, uint8_t* bootSector = nullptr);
 	~BootSectorGUI();
 
 private:
 	Ui::BootSectorGUIClass *ui;
-	void* bootSector;
+	uint8_t* bootSector;
+
+	// Initialize GUI
 	void initializeGUI();
-	void initializeRawData();
-	
-	void initializeInfo();
+	void initializeRawDataGUI();
+	void initializeDetailGUI();
+
+	// Print the data to the GUI
 	void initializeFat32Info();
 	void initializeNTFSInfo();
 	
-	void addInfoRow(std::string name, int offset, std::string value);
+	// Helper function to add a row to the detail table
+	void addDetailRow(std::string name, int offset, std::string value);
 
 };

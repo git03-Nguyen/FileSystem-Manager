@@ -4,13 +4,11 @@
 #include <QHBoxLayout>
 #include <QInputDialog>
 #include <QMessageBox>
+#include "ui_MainGUI.h"
 
 #include <vector>
 
-#include "ui_MainGUI.h"
 #include "ReadSector.h"
-#include "FAT32_NTFS.h"
-
 #include "BootSectorGUI.h"
 #include "TreeFolderGUI.h"
 
@@ -32,9 +30,11 @@ private:
     TreeFolderGUI* treeFolderGUI;
     std::vector<QObject*> listGUI;
 
+    // Initialize GUI components
     void initializeReadDisk();
     void initializeDisplayTree();
 
+    // Function handle for button clicked
     void onBtnReadDiskClicked();
     void onBtnDisplayTreeClicked();
 };

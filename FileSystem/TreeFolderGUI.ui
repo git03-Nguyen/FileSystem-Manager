@@ -6,12 +6,12 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>854</width>
+    <width>1014</width>
     <height>583</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>TreeFolderGUI</string>
+   <string>Hiển thị cây thư mục</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <property name="autoFillBackground">
@@ -126,6 +126,16 @@
          <column>
           <property name="text">
            <string>Thuộc tính</string>
+          </property>
+          <property name="font">
+           <font>
+            <fontweight>DemiBold</fontweight>
+           </font>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Sector no.</string>
           </property>
           <property name="font">
            <font>
