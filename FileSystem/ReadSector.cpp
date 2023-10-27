@@ -1,6 +1,6 @@
 ﻿#include "ReadSector.h"
 
-DWORD readSector(std::string drive, uint64_t byteOffset, uint8_t sector[]) { 
+DWORD readByte(std::string drive, uint64_t byteOffset, uint8_t sector[], int sizeToRead) { 
     if (drive.size() != 2 || drive[1] != ':') {
         SetLastError(3);
         throw "Đường dẫn ổ đĩa không hợp lệ!";
@@ -25,9 +25,18 @@ DWORD readSector(std::string drive, uint64_t byteOffset, uint8_t sector[]) {
         throw "Không thể mở ổ đĩa!";
     }
 
-    SetFilePointer(partition, byteOffset, NULL, FILE_BEGIN); //Set a Point to Read - MUST be a multiple of 512
+    // if byteOffset > max dword, set file pointer to max dword
+    if (byteOffset > INT32_MAX) {
+        // divide lower 32 bits and higher 32 bits
+        uint32_t lower = byteOffset & 0x00000000FFFFFFFF;
+        uint32_t higher = byteOffset >> 32;
+		SetFilePointer(partition, lower, (PLONG) & higher, FILE_BEGIN);
+    }
+    else {
+        SetFilePointer(partition, byteOffset, NULL, FILE_BEGIN); //Set a Point to Read - MUST be a multiple of 512
+    }
 
-    if (!ReadFile(partition, sector, BOOT_SECTOR_SIZE, &bytesRead, NULL)) {
+    if (!ReadFile(partition, sector, sizeToRead, &bytesRead, NULL)) {
         throw "Không thể đọc sector!";
     }
 
@@ -98,7 +107,7 @@ std::vector<uint32_t> readClusterChainFat32(uint32_t cluster, std::string drive,
         int entriesPerSector = bootSector->bytesPerSec / 4;
 
         int startSector = bootSector->rsvdSec + nextCluster / entriesPerSector;
-        readSector(drive, startSector * bootSector->bytesPerSec, (uint8_t*)sector);
+        readByte(drive, startSector * bootSector->bytesPerSec, (uint8_t*)sector);
 
         while (true) {
             int offset = nextCluster % entriesPerSector;

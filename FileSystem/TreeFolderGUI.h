@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QMainWindow>
+#include <QMessageBox>
 #include "ui_TreeFolderGUI.h"
 
 #include <string>
@@ -26,7 +27,8 @@ private:
 	FileSystem fileSystemType;
 	std::string drive;
 	std::wstring currentPath;
-	std::stack<uint32_t> stackCluster;
+	std::stack<uint32_t> stackClusters; // used by FAT32
+	std::stack<uint64_t> stackMftEntries; // used by NTFS
 
 	// Initialize GUI
 	void initializeTreeFolder();
@@ -35,11 +37,11 @@ private:
 
 	// Display current folder
 	void displayCurrentFolder(std::string drive, uint32_t cluster, FAT32_BS* bootSector);
-	void displayCurrentFolder(std::string drive, uint64_t cluster, NTFS_BS* bootSector);
+	void displayCurrentFolder(std::string drive, uint64_t entryNum, NTFS_BS* bootSector);
 
 	// Helper to add file/folder to tree
 	void addItemToTreeFAT32(const FAT32_DirectoryEntry& entry, std::wstring name = L"");
-	void addItemToTreeNTFS(NTFS_FileRecord* entry, std::wstring name = L"");
+	void addItemToTreeNTFS(NTFS_MftEntry* entry, const std::wstring& fileName, int mftEntryNum);
 
 	// Handle double click on file/folder
 	void onTreeItemDoubleClickedFAT32(QTreeWidgetItem* item, int column);

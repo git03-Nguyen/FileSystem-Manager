@@ -124,7 +124,7 @@ void MainGUI::onBtnReadDiskClicked() {
     try {
         // read boot sector
         uint8_t bootSector[BOOT_SECTOR_SIZE] = { 0 };
-        DWORD bytesRead = readSector(drive.toStdString(), 0, bootSector);
+        DWORD bytesRead = readByte(drive.toStdString(), 0, bootSector);
 
         // read file system type
         FileSystem fs = getFileSystemType(bootSector);
@@ -164,7 +164,7 @@ void MainGUI::onBtnDisplayTreeClicked() {
     try {
         // read boot sector
         uint8_t bootSector[BOOT_SECTOR_SIZE] = { 0 };
-        DWORD bytesRead = readSector(drive.toStdString(), 0, bootSector);
+        DWORD bytesRead = readByte(drive.toStdString(), 0, bootSector);
 
         // read file system type
         FileSystem fs = getFileSystemType(bootSector);

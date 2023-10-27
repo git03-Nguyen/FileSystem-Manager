@@ -106,13 +106,173 @@ struct FAT32_LFN_DirectoryEntry {
 };
 #pragma pack(pop)
 
-// Structure of a NTFS 
+// Structure of a NTFS entry
 #pragma pack(push, 1)
-struct NTFS_FileRecord {
-
-
+struct NTFS_MftEntryHeader {
+	uint8_t signature[4]; // 0x00
+	uint16_t fixupOffset; // 0x04	
+	uint16_t fixupSize; // 0x06
+	uint64_t logSeqNum; // 0x08
+	uint16_t seqNum; // 0x10
+	uint16_t hardLinks; // 0x12
+	uint16_t attrOffset; // 0x14 (important)
+	uint16_t flags; // 0x16: 0x00: not in use, 0x01: in use, 0x02: directory, 0x03: directory and in use
+	uint32_t usedLength; // 0x18
+	uint32_t totalLength; // 0x1C
+	uint64_t entryBase; // 0x20
+	uint16_t nextAttrId; // 0x28
 };
 #pragma pack(pop)
+
+#pragma pack(push, 1)
+struct NTFS_MftEntry {
+	NTFS_MftEntryHeader header;
+	uint8_t* attributes;
+};
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+struct NTFS_AttrHeader {
+	uint32_t type; // 0x00
+	uint32_t length; // 0x04
+	uint8_t nonResident; // 0x08
+	uint8_t nameLength; // 0x09
+	uint16_t nameOffset; // 0x0A
+	uint16_t flags; // 0x0C
+	uint16_t attrId; // 0x0E
+};
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+struct NTFS_AttrResident {
+	NTFS_AttrHeader header;
+	uint16_t length; // 0x10
+	uint16_t attrOffset; // 0x12
+	uint8_t indexed; // 0x14
+	uint8_t padding; // 0x15
+	uint16_t contentLength; // 0x16
+	uint16_t contentOffset; // 0x18
+	uint16_t flags; // 0x1A
+};
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+struct NTFS_AttrNonResident {
+	NTFS_AttrHeader header;
+	uint64_t startVCN; // 0x10
+	uint64_t endVCN; // 0x18
+	uint16_t dataRunOffset; // 0x20
+	uint16_t compressionUnitSize; // 0x22
+	uint32_t padding; // 0x24
+	uint64_t allocatedSize; // 0x28
+	uint64_t dataSize; // 0x30
+	uint64_t initializedSize; // 0x38
+	uint64_t compressedSize; // 0x40
+};
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+struct NTFS_AttrData {
+	NTFS_AttrHeader header;
+	uint64_t initialVCN; // 0x10
+	uint64_t finalVCN; // 0x18
+	uint16_t dataRunOffset; // 0x20
+	uint16_t compressionUnitSize; // 0x22
+	uint32_t padding; // 0x24
+	uint64_t allocatedSize; // 0x28
+	uint64_t dataSize; // 0x30
+	uint64_t initializedSize; // 0x38
+	uint8_t dataRun; // 0x40
+};
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+struct NTFS_AttrIndexRoot {
+	NTFS_AttrHeader header;
+	uint32_t attrType; // 0x10
+	uint32_t collationRule; // 0x14
+	uint32_t indexAllocationEntrySize; // 0x18
+	uint8_t clustersPerIndexRecord; // 0x1C
+	uint8_t padding[3]; // 0x1D
+	uint64_t indexSize; // 0x20
+	uint64_t indexAllocSize; // 0x28
+	uint8_t index[0x30];
+};
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+struct NTFS_AttrFileName {
+	NTFS_AttrHeader header;
+	uint64_t parentDirRef; // 0x10
+	uint64_t createTime; // 0x18
+	uint64_t modifyTime; // 0x20
+	uint64_t mftChangeTime; // 0x28
+	uint64_t accessedTime; // 0x30
+	uint64_t allocatedSize; // 0x38
+	uint64_t dataSize; // 0x40
+	uint32_t flags; // 0x48
+	uint32_t reparse; // 0x4C
+	uint8_t nameLength; // 0x50
+	uint8_t nameType; // 0x51
+	uint16_t name[0x30]; // 0x52
+};
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+struct NTFS_AttrStandardInfo {
+	NTFS_AttrHeader header;
+	uint16_t length; // 0x10
+	uint16_t attrOffset; // 0x12
+	uint8_t indexed; // 0x14
+	uint8_t padding; // 0x15
+	uint64_t createdTime; // 0x16
+	uint64_t modifiedTime; // 0x1E
+	uint64_t mftChangedTime; // 0x26
+	uint64_t accessedTime; // 0x2E
+	uint32_t fileFlags; // 0x36
+	uint32_t padding2; // 0x3A
+};
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+struct NTFS_IndexFile {
+	uint8_t signature[4]; // 0x00 - INDX
+	uint16_t fixupOffset; // 0x04
+	uint16_t fixupSize; // 0x06
+	uint64_t logSeqNum; // 0x08
+	uint64_t indexVCN; // 0x10
+	uint32_t indexEntryOffset; // 0x18
+	uint32_t indexEntrySize; // 0x1C
+	uint32_t indexEntryAllocSize; // 0x20
+	uint8_t flags; // 0x24 - designate if the node has children
+	uint8_t padding[3]; // 0x25
+	uint16_t updateSeqNum; // 0x28
+	uint8_t* others; // 0x2A
+};
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+struct NTFS_IndexEntry {
+	uint64_t reference; // 0x00
+uint16_t length; // 0x08
+uint16_t offsetToEndName; // 0x0A
+uint16_t flags; // 0x0C
+uint8_t padding[2]; // 0x0E
+uint64_t parentDirRef; // 0x10
+uint64_t createTime; // 0x18
+uint64_t modifyTime; // 0x20
+uint64_t mftChangeTime; // 0x28
+uint64_t accessTime; // 0x30
+uint64_t allocatedSize; // 0x38
+uint64_t dataSize; // 0x40
+uint64_t fileFlags; // 0x48
+uint8_t nameLength; // 0x50
+uint8_t fileNamespace; // 0x51
+wchar_t fileName; // 0x52
+};
+#pragma pack(pop)
+
+
 
 
 // -----------------------------------------------------------------------------------------

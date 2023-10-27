@@ -11,7 +11,7 @@
 #include "FAT32_NTFS.h"
 
 // read a sector from a drive
-DWORD readSector(std::string drive, uint64_t byteOffset, uint8_t sector[]);
+DWORD readByte(std::string drive, uint64_t byteOffset, uint8_t sector[], int sizeToRead = BOOT_SECTOR_SIZE);
 
 // read a cluster from a drive
 DWORD readCluster(std::string drive, uint64_t byteOffset, uint8_t cluster[], int clusterSize);

@@ -60,7 +60,7 @@ void TreeFolderGUI::initializeTreeFolderFAT32() {
 
 	// Show the root directory
 	FAT32_BS* bootSe = (FAT32_BS*)this->bootSector;
-	stackCluster.push(bootSe->rootClus);
+	stackClusters.push(bootSe->rootClus);
 	displayCurrentFolder(drive, bootSe->rootClus, bootSe);
 	
 }
@@ -85,7 +85,7 @@ void TreeFolderGUI::displayCurrentFolder(std::string drive, uint32_t cluster, FA
 		while (startSector < endSector) {
 
 			sectorBuffer = new uint8_t[bootSector->bytesPerSec] { 0 };
-			readSector(drive, startSector * bootSector->bytesPerSec, sectorBuffer);
+			readByte(drive, startSector * bootSector->bytesPerSec, sectorBuffer);
 			
 			// For each sector, read each directory entry (32 bytes)
 			for (int offset = 0; offset < bootSector->bytesPerSec; offset += 32) {
@@ -119,6 +119,231 @@ void TreeFolderGUI::displayCurrentFolder(std::string drive, uint32_t cluster, FA
 }
 
 void TreeFolderGUI::initializeTreeFolderNTFS() {
+	// Add listener for double click event on file/folder
+	connect(ui->treeFolder, &QTreeWidget::itemDoubleClicked, this, &TreeFolderGUI::onTreeItemDoubleClickedNTFS);
+
+	ui->treeFolder->setHeaderLabels(QStringList() << "Tên" << "Loại" << "Kích thước" << "Ngày tạo" << "Ngày sửa" << "Ngày truy cập" << "Thuộc tính" << "Sector no." << "MFT entry no.");
+
+	// Show the root directory
+	// The root directory "." in NTFS is the 5th entry in the MFT
+	NTFS_BS* bootSector = (NTFS_BS*)this->bootSector;
+	stackMftEntries.push(5);
+	displayCurrentFolder(drive, 5, bootSector);
+
+}
+
+void TreeFolderGUI::displayCurrentFolder(std::string drive, uint64_t entryNum, NTFS_BS* bootSector) {
+	ui->treeFolder->clear();
+
+	// Define MFT start sector
+	uint64_t mftStartOffset = bootSector->clusOfMFT * bootSector->secPerClus * bootSector->bytesPerSec;
+
+	// Define file record size (bytes): positive: num. of clusters || negative: 2^abs(value) bytes ; i.e: 0xf6 = -10 => 2^10 = 1024 bytes/File Record Segment
+	int64_t fileRecordSize;
+	(bootSector->szFileRecord < 0) ? fileRecordSize = 1 << abs(bootSector->szFileRecord) : fileRecordSize = bootSector->szFileRecord * bootSector->secPerClus * bootSector->bytesPerSec;
+
+	// Define index block size, as above
+	int64_t indexRecordSize;
+	(bootSector->szIndexBuff < 0) ? indexRecordSize = 1 << abs(bootSector->szIndexBuff) : indexRecordSize = bootSector->szIndexBuff * bootSector->secPerClus * bootSector->bytesPerSec;
+
+	// Find the sector start the entry
+	uint64_t entryStartOffset = mftStartOffset + entryNum * fileRecordSize / bootSector->bytesPerSec * bootSector->bytesPerSec;
+
+	// Read the entry
+	uint8_t* entryBuffer = new uint8_t[fileRecordSize] { 0 };
+	readByte(drive, entryStartOffset, entryBuffer, fileRecordSize);
+	NTFS_MftEntry* entry = (NTFS_MftEntry*)entryBuffer;
+
+	// Read signature if it is a "FILE" or "BAAD"
+	std::string signature = std::string((char*)entry->header.signature, sizeof(entry->header.signature));
+	if (signature == "BAAD") {
+		QMessageBox::critical(this, "Lỗi", "Không thể đọc thư mục này!");
+		stackMftEntries.pop();
+		displayCurrentFolder(drive, stackMftEntries.top(), bootSector);
+		return;
+	}
+
+	// Read the root index attribute
+	// ...
+
+	// Read the index allocation attribute -> always non-resident
+	NTFS_AttrHeader* attrHeader = (NTFS_AttrHeader*)((uint8_t*)entry + entry->header.attrOffset);
+	NTFS_AttrNonResident* indexAlloc = nullptr;
+	while ((uint8_t*)attrHeader < entryBuffer + fileRecordSize) {
+		if (attrHeader->type == 0xA0) {
+			indexAlloc = (NTFS_AttrNonResident*)attrHeader;
+			break;
+		}
+		attrHeader = (NTFS_AttrHeader*)((uint8_t*)attrHeader + attrHeader->length);
+	}
+
+	// Read the data runs
+	uint8_t* dataRun = (uint8_t*)indexAlloc + indexAlloc->dataRunOffset;
+	uint8_t* dataRunEnd = (uint8_t*)indexAlloc + indexAlloc->header.length;
+	// The first byte: take lower 4 bit and higher 4 bit
+	uint8_t lower4bit = *dataRun & 0x0F;
+	uint8_t higher4bit = *dataRun >> 4;
+	dataRun = dataRun + 1;
+	dataRun = dataRun + lower4bit;
+
+	// Read "higher4bit" bytes
+	uint64_t clusterNum = 0;
+	for (int i = 0; i < higher4bit; i++) {
+	clusterNum = clusterNum | (uint64_t)(*dataRun << (i * 8));
+	dataRun = dataRun + 1;
+	}
+	uint64_t dataOffset = clusterNum * bootSector->secPerClus * bootSector->bytesPerSec;
+
+	// Read the index file in dataOffset
+	uint8_t* indexBuffer = new uint8_t[indexRecordSize] { 0 };
+	readByte(drive, dataOffset, indexBuffer, indexRecordSize);
+	NTFS_IndexFile* indexFile = (NTFS_IndexFile*)indexBuffer;
+
+	// Add items ".." to tree, find the parent entry having mftEntryNum = top of stack
+	if (stackMftEntries.size() > 1) {
+	// add tree item ".."
+	QTreeWidgetItem* item = new QTreeWidgetItem(ui->treeFolder);
+	item->setText(0, "..");
+	item->setText(1, "Thư mục");
+	}
+
+	// Read each index entry
+	NTFS_IndexEntry* indexEntry = (NTFS_IndexEntry*)((uint8_t*)&indexFile->indexEntryOffset + indexFile->indexEntryOffset);
+	uint8_t* indexEntryEnd = (uint8_t*)indexFile + indexRecordSize;
+	while ((uint8_t*)indexEntry < indexEntryEnd) {
+		// If it's the last entry, break
+		if (indexEntry->flags == 2) break;
+		// If it's the DOS name or if it's ".", continue 
+		if (indexEntry->fileNamespace == 2) {
+			indexEntry = (NTFS_IndexEntry*)((uint8_t*)indexEntry + indexEntry->length);
+			continue;
+		}
+		// Get the file name
+		std::wstring fileName = std::wstring(&indexEntry->fileName, indexEntry->nameLength);
+		if (fileName == L".") {
+			indexEntry = (NTFS_IndexEntry*)((uint8_t*)indexEntry + indexEntry->length);
+			continue;
+		}
+		
+		// Find the entry in MFT
+		uint64_t mftEntryNum = indexEntry->reference;
+		// Set 2 lower bytes to 0
+		mftEntryNum = mftEntryNum & 0x0000FFFFFFFFFFFF;
+		// Read the entry
+		uint64_t mftEntryOffset = mftStartOffset + mftEntryNum * fileRecordSize / bootSector->bytesPerSec * bootSector->bytesPerSec;
+		uint8_t* mftEntryBuffer2 = new uint8_t[fileRecordSize] { 0 };
+		readByte(drive, mftEntryOffset, mftEntryBuffer2, fileRecordSize);
+		addItemToTreeNTFS((NTFS_MftEntry*)mftEntryBuffer2, fileName, mftEntryNum);
+		delete[] mftEntryBuffer2;
+
+		indexEntry = (NTFS_IndexEntry*)((uint8_t*)indexEntry + indexEntry->length);
+
+	}
+
+	delete[] entryBuffer;
+	delete[] indexBuffer;
+
+}
+
+void TreeFolderGUI::addItemToTreeNTFS(NTFS_MftEntry* entry, const std::wstring& fileName, int mftEntryNum) {
+// Add items to tree: (name, type, size, time created, time modified, date accessed, attributes, sectors, cluster start):
+	QTreeWidgetItem* item = new QTreeWidgetItem(ui->treeFolder);
+	item->setTextAlignment(2, Qt::AlignRight);
+
+	// set file name is fileName
+	item->setText(0, QString::fromStdWString(fileName));
+
+	// set mft number is mftEntryNum
+	item->setText(8, QString::number(mftEntryNum));
+
+	// Set MFT sector
+	NTFS_BS* bootSector = (NTFS_BS*)this->bootSector;
+	int64_t fileRecordSize;
+	(bootSector->szFileRecord < 0) ? fileRecordSize = 1 << abs(bootSector->szFileRecord) : fileRecordSize = bootSector->szFileRecord * bootSector->secPerClus * bootSector->bytesPerSec;
+	uint64_t mftSector = bootSector->clusOfMFT * bootSector->secPerClus + mftEntryNum * fileRecordSize / bootSector->bytesPerSec;
+	item->setText(7, QString::number(mftSector));
+
+
+	// Find the standard information attribute
+	NTFS_AttrHeader* attrHeader = (NTFS_AttrHeader*)((uint8_t*)entry + entry->header.attrOffset);
+	NTFS_AttrStandardInfo* standardInfo = nullptr;
+	while ((uint8_t*)attrHeader < (uint8_t*)entry + fileRecordSize) {
+		if (attrHeader->type == 0x10) {
+			standardInfo = (NTFS_AttrStandardInfo*)attrHeader;
+			break;
+		}
+		attrHeader = (NTFS_AttrHeader*)((uint8_t*)attrHeader + attrHeader->length);
+	}
+
+	if (!standardInfo) return;
+
+	// Read time created from standard information attribute, convert the uint64_t to string
+	std::string timeCreated = std::to_string(standardInfo->createdTime);
+	// Set time created to item
+	item->setText(3, QString::fromStdString(timeCreated));
+
+	// Read time modified from standard information attribute, convert the uint64_t to string
+	std::string timeModified = std::to_string(standardInfo->modifiedTime);
+	// Set time modified to item
+	item->setText(4, QString::fromStdString(timeModified));
+
+	// Read time accessed from standard information attribute, convert the uint64_t to string
+	std::string timeAccessed = std::to_string(standardInfo->accessedTime);
+	// Set time accessed to item
+	item->setText(5, QString::fromStdString(timeAccessed));
+
+	// Read the flags from standard information attribute
+	std::string attributes = "";
+	if (standardInfo->fileFlags & 0x0001) attributes += "Read-only, ";
+	if (standardInfo->fileFlags & 0x0002) attributes += "Hidden, ";
+	if (standardInfo->fileFlags & 0x0004) attributes += "System, ";
+	if (standardInfo->fileFlags & 0x0020) attributes += "Archive, ";
+	if (standardInfo->fileFlags & 0x0040) attributes += "Device, ";
+	if (standardInfo->fileFlags & 0x0080) attributes += "Normal, ";
+	if (standardInfo->fileFlags & 0x0100) attributes += "Temporary, ";
+	if (standardInfo->fileFlags & 0x0200) attributes += "Sparse file, ";
+	if (standardInfo->fileFlags & 0x0400) attributes += "Reparse point, ";
+	if (standardInfo->fileFlags & 0x0800) attributes += "Compressed, ";
+	if (standardInfo->fileFlags & 0x1000) attributes += "Offline, ";
+	if (standardInfo->fileFlags & 0x2000) attributes += "Not content indexed, ";
+	if (standardInfo->fileFlags & 0x4000) attributes += "Encrypted, ";
+	attributes.erase(attributes.find_last_not_of(", ") + 1);
+	// Set attributes to item
+	item->setText(6, QString::fromStdString(attributes));
+
+	
+	// Find the data attribute
+	attrHeader = (NTFS_AttrHeader*)((uint8_t*)entry + entry->header.attrOffset);
+	int count = 0;
+	NTFS_AttrData* data = nullptr;
+	while ((uint8_t*)attrHeader < (uint8_t*)entry + fileRecordSize) {
+		if (attrHeader->type == 0x80) {
+			data = (NTFS_AttrData*)attrHeader;
+			break;
+		}
+		attrHeader = (NTFS_AttrHeader*)((uint8_t*)attrHeader + attrHeader->length);
+		count++;
+		if (count > 10) break;
+	}
+
+	if (data) {
+		// Set size, type
+		std::string size = std::to_string(data->dataSize);
+		item->setText(2, QString::fromStdString(size));
+		item->setText(1, "Tập tin");
+
+	}
+	else {
+		item->setText(1, "Thư mục");
+	}
+
+	
+
+
+
+
+
+
 }
 
 void TreeFolderGUI::addItemToTreeFAT32(const FAT32_DirectoryEntry& entry, std::wstring name) {
@@ -273,7 +498,7 @@ void TreeFolderGUI::openFileFAT32(QTreeWidgetItem* item) {
 	int endSector = startSector + bootSector->secPerClus;
 	while (startSector < endSector && remaining) {
 		sectorBuffer = new uint8_t[bootSector->bytesPerSec]{ 0 };
-		fileSize -= readSector(drive, startSector * bootSector->bytesPerSec, sectorBuffer);
+		fileSize -= readByte(drive, startSector * bootSector->bytesPerSec, sectorBuffer);
 
 		// In the first sector, determine the encoding of the file
 		if (!utf8 && !utf16_little && !utf16_big) {
@@ -329,7 +554,7 @@ void TreeFolderGUI::openFileFAT32(QTreeWidgetItem* item) {
 
 			while (startSector < endSector) {
 				sectorBuffer = new uint8_t[bootSector->bytesPerSec]{ 0 };
-				fileSize -= readSector(drive, startSector * bootSector->bytesPerSec, sectorBuffer);
+				fileSize -= readByte(drive, startSector * bootSector->bytesPerSec, sectorBuffer);
 
 				// Read the file with the encoding defined above
 				if (utf8) ui->txtPreview->insertPlainText(QString::fromStdString(std::string((char*)sectorBuffer, bootSector->bytesPerSec)));
@@ -353,8 +578,8 @@ void TreeFolderGUI::openFolderFAT32(QTreeWidgetItem* item) {
 	// Open parent folder
 	if (fileName == L"..") {
 		// Pop out the last folder in current path
-		this->stackCluster.pop();
-		cluster = stackCluster.top();
+		this->stackClusters.pop();
+		cluster = stackClusters.top();
 		currentPath.erase(currentPath.find_last_of(L"\\"));
 		currentPath.erase(currentPath.find_last_of(L"\\"));
 		currentPath += L"\\";
@@ -364,7 +589,7 @@ void TreeFolderGUI::openFolderFAT32(QTreeWidgetItem* item) {
 		// Add folder to current path
 		cluster = std::stoi(item->text(8).toStdString());
 		currentPath = currentPath + fileName + L"\\";
-		stackCluster.push(cluster);
+		stackClusters.push(cluster);
 	};
 
 	// Display current folder
@@ -392,4 +617,7 @@ void TreeFolderGUI::onTreeItemDoubleClickedFAT32(QTreeWidgetItem* item, int colu
 		// If folder, open folder
 		openFolderFAT32(item);
 	}
+}
+
+void TreeFolderGUI::onTreeItemDoubleClickedNTFS(QTreeWidgetItem* item, int column) {
 }
