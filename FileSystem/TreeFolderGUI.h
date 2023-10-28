@@ -1,5 +1,6 @@
 #pragma once
 
+
 #include <QMainWindow>
 #include <QMessageBox>
 #include "ui_TreeFolderGUI.h"
@@ -53,5 +54,9 @@ private:
 	// Helper to open file/folder FAT32
 	void openFileFAT32(QTreeWidgetItem* item);
 	void openFolderFAT32(QTreeWidgetItem* item);
+
+	// Helper to open file/folder NTFS
+	void openFileNTFS(QTreeWidgetItem* item);
+	void openFolderNTFS(QTreeWidgetItem* item);
 
 };

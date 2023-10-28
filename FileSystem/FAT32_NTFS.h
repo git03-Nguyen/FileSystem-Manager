@@ -182,21 +182,27 @@ struct NTFS_AttrData {
 	uint64_t allocatedSize; // 0x28
 	uint64_t dataSize; // 0x30
 	uint64_t initializedSize; // 0x38
-	uint8_t dataRun; // 0x40
 };
 #pragma pack(pop)
 
 #pragma pack(push, 1)
 struct NTFS_AttrIndexRoot {
 	NTFS_AttrHeader header;
-	uint32_t attrType; // 0x10
-	uint32_t collationRule; // 0x14
-	uint32_t indexAllocationEntrySize; // 0x18
-	uint8_t clustersPerIndexRecord; // 0x1C
-	uint8_t padding[3]; // 0x1D
-	uint64_t indexSize; // 0x20
-	uint64_t indexAllocSize; // 0x28
-	uint8_t index[0x30];
+	int32_t length; // 0x10
+	uint16_t attrOffset; // 0x14
+	uint8_t indexed; // 0x16
+	uint8_t padding; // 0x17
+	wchar_t attrName[4]; // 0x18
+	uint32_t attrType; // 0x20
+	uint32_t collationRule; // 0x24
+	uint32_t indexAllocationSize; // 0x28
+	uint8_t clustersPerIndexRecord; // 0x2C
+	uint8_t padding2[3]; // 0x2D
+	uint32_t offsetToFirstIndexEntry; // 0x30
+	uint32_t totalSizeOfEntries; // 0x34
+	uint32_t allocatedSizeOfEntries; // 0x38
+	uint8_t flags; // 0x3C
+	uint8_t padding3[3]; // 0x3D
 };
 #pragma pack(pop)
 
@@ -221,16 +227,16 @@ struct NTFS_AttrFileName {
 #pragma pack(push, 1)
 struct NTFS_AttrStandardInfo {
 	NTFS_AttrHeader header;
-	uint16_t length; // 0x10
-	uint16_t attrOffset; // 0x12
-	uint8_t indexed; // 0x14
-	uint8_t padding; // 0x15
-	uint64_t createdTime; // 0x16
-	uint64_t modifiedTime; // 0x1E
-	uint64_t mftChangedTime; // 0x26
-	uint64_t accessedTime; // 0x2E
-	uint32_t fileFlags; // 0x36
-	uint32_t padding2; // 0x3A
+	int32_t length; // 0x10
+	uint16_t attrOffset; // 0x14
+	uint8_t indexed; // 0x16
+	uint8_t padding; // 0x17
+	uint64_t createdTime; // 0x18
+	uint64_t modifiedTime; // 0x20
+	uint64_t mftChangedTime; // 0x28
+	uint64_t accessedTime; // 0x2A
+	uint32_t fileFlags; // 0x38
+	uint32_t padding2; // 0x3C
 };
 #pragma pack(pop)
 
