@@ -383,10 +383,10 @@ void TreeFolderGUI::addItemToTreeNTFS(NTFS_MftEntry* entry, const std::wstring& 
 	// Find the data attribute
 	attrHeader = (NTFS_AttrHeader*)((uint8_t*)entry + entry->header.attrOffset);
 	int count = 0;
-	NTFS_AttrData* data = nullptr;
+	NTFS_AttrDataNonRes* data = nullptr;
 	while ((uint8_t*)attrHeader < (uint8_t*)entry + fileRecordSize) {
 		if (attrHeader->type == 0x80) {
-			data = (NTFS_AttrData*)attrHeader;
+			data = (NTFS_AttrDataNonRes*)attrHeader;
 			break;
 		}
 		attrHeader = (NTFS_AttrHeader*)((uint8_t*)attrHeader + attrHeader->length);
@@ -678,23 +678,31 @@ void TreeFolderGUI::openFileNTFS(QTreeWidgetItem* item) {
 	// Find the data attribute
 	NTFS_AttrHeader* attrHeader = (NTFS_AttrHeader*)((uint8_t*)entry + entry->header.attrOffset);
 	int count = 0;
-	NTFS_AttrData* data = nullptr;
+	NTFS_AttrDataNonRes* data = nullptr;
 	while ((uint8_t*)attrHeader < (uint8_t*)entry + fileRecordSize && count++<20) {
 		if (attrHeader->type == 0x80) {
-			data = (NTFS_AttrData*)attrHeader;
+			data = (NTFS_AttrDataNonRes*)attrHeader;
 			break;
 		}
 		attrHeader = (NTFS_AttrHeader*)((uint8_t*)attrHeader + attrHeader->length);
 	}
 
-	if (!data) return;
-
 	// See if it is resident or non-resident
 	// If it is resident, read the whole file
 	if (data->header.nonResident == 0) {
-		// Read the file
-		
-		// Add text to text preview
+		NTFS_AttrDataRes* dataRes = (NTFS_AttrDataRes*)data;
+		if (dataRes->length != 0) {
+			char* dataString = (char*)((uint8_t*)dataRes + dataRes->attrOffset);
+			//check for unicode
+			if (*(uint16_t*)dataString == 0xFEFF) {
+				// unicode
+				ui->txtPreview->insertPlainText(QString::fromStdWString(std::wstring((wchar_t*)dataString + 1, (dataRes->length - 2) / 2)));
+			}
+			else {
+				// ascii
+				ui->txtPreview->insertPlainText(QString::fromStdString(std::string(dataString, dataRes->length)));
+			}
+		}
 		
 	}
 	else {
@@ -702,43 +710,42 @@ void TreeFolderGUI::openFileNTFS(QTreeWidgetItem* item) {
 		uint8_t* dataRun = (uint8_t*)data + data->dataRunOffset;
 		int64_t fileSize = data->dataSize;
 
-		// get the high half byte and low half byte of the first byte
-		uint8_t highHalfByte = dataRun[0] >> 4;
-		uint8_t lowHalfByte = dataRun[0] & 0x0F;
+		while (true) {
+			// get the high half byte and low half byte of the first byte
+			uint8_t highHalfByte = dataRun[0] >> 4;
+			uint8_t lowHalfByte = dataRun[0] & 0x0F;
 
-		// get the size in clusters
-		uint64_t length = 0;
-		for (int i = 1; i <= lowHalfByte; i++) {
-			length += dataRun[i] << (8 * (i - 1));
+			// get the size in clusters
+			uint64_t length = 0;
+			for (int i = 1; i <= lowHalfByte; i++) {
+				length += dataRun[i] << (8 * (i - 1));
+			}
+			dataRun += lowHalfByte;
+
+			// get the offset in clusters
+			uint64_t offset = 0;
+			for (int i = 1; i <= highHalfByte; i++) {
+				offset += dataRun[i] << (8 * (i - 1));
+			}
+			dataRun += highHalfByte + 1;
+
+			// read file
+			uint8_t* sectorBuffer = nullptr;
+
+			// read at offset and length
+			sectorBuffer = new uint8_t[length * bootSector->secPerClus * bootSector->bytesPerSec]{ 0 };
+			fileSize -= readByte(drive, offset * bootSector->secPerClus * bootSector->bytesPerSec, sectorBuffer, length * bootSector->secPerClus * bootSector->bytesPerSec);
+
+			// add text to text preview
+			ui->txtPreview->insertPlainText(QString::fromStdString(std::string((char*)sectorBuffer, length * bootSector->secPerClus * bootSector->bytesPerSec)));
+
+			delete[] sectorBuffer;
+
+			if (fileSize <= 0 || dataRun[0] == 0) break;
 		}
-		dataRun += lowHalfByte + 1;
-
-		// get the offset in clusters
-		uint64_t offset = 0;
-		for (int i = 1; i <= highHalfByte; i++) {
-			offset += dataRun[i] << (8 * (i - 1));
-		}
-		dataRun += highHalfByte + 1;
-
-		// read file
-		bool remaining = true;
-		uint8_t* sectorBuffer = nullptr;
-
-		// read at offset and length
-		sectorBuffer = new uint8_t[length * bootSector->secPerClus * bootSector->bytesPerSec]{ 0 };
-		fileSize -= readByte(drive, offset * bootSector->bytesPerSec, sectorBuffer, length * bootSector->bytesPerSec);
-
-		// add text to text preview
-		ui->txtPreview->insertPlainText(QString::fromStdString(std::string((char*)sectorBuffer, length * bootSector->secPerClus * bootSector->bytesPerSec)));
-
-
-
-		delete[] sectorBuffer;
-
-		// if filesize<0
-
-
 	}
+
+	delete[] mftEntryBuffer;
 
 }
 
@@ -802,7 +809,7 @@ void TreeFolderGUI::onTreeItemDoubleClickedNTFS(QTreeWidgetItem* item, int colum
 			ShellExecute(0, 0, L"rundll32.exe", (L"shell32.dll,OpenAs_RunDLL " + fullPath).c_str(), 0, SW_SHOW);
 		}
 		else {
-			ui->txtPreview->insertPlainText("Nội dung tập tin ở đây!");
+			openFileNTFS(item);
 		}
 	}
 	else {

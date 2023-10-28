@@ -172,7 +172,7 @@ struct NTFS_AttrNonResident {
 #pragma pack(pop)
 
 #pragma pack(push, 1)
-struct NTFS_AttrData {
+struct NTFS_AttrDataNonRes {
 	NTFS_AttrHeader header;
 	uint64_t initialVCN; // 0x10
 	uint64_t finalVCN; // 0x18
@@ -184,6 +184,16 @@ struct NTFS_AttrData {
 	uint64_t initializedSize; // 0x38
 };
 #pragma pack(pop)
+
+#pragma pack(push, 1)
+struct NTFS_AttrDataRes {
+	NTFS_AttrHeader header;
+	uint32_t length; // 0x10
+	uint16_t attrOffset; // 0x14
+	uint8_t indexed; // 0x16
+	uint8_t padding; // 0x17
+	uint8_t content; // 0x18
+};
 
 #pragma pack(push, 1)
 struct NTFS_AttrIndexRoot {
