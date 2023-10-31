@@ -60,9 +60,22 @@ void TreeFolderGUI::initializeTreeFolderFAT32() {
 
 	// Show the root directory
 	FAT32_BS* bootSe = (FAT32_BS*)this->bootSector;
-	stackClusters.push(bootSe->rootClus);
+	stackOldPaths.push(bootSe->rootClus);
 	displayCurrentFolder(drive, bootSe->rootClus, bootSe);
 	
+}
+
+void TreeFolderGUI::initializeTreeFolderNTFS() {
+	// Add listener for double click event on file/folder
+	connect(ui->treeFolder, &QTreeWidget::itemDoubleClicked, this, &TreeFolderGUI::onTreeItemDoubleClickedNTFS);
+
+	ui->treeFolder->setHeaderLabels(QStringList() << "Tên" << "Loại" << "Kích thước" << "Ngày tạo" << "Ngày sửa" << "Ngày truy cập" << "Thuộc tính" << "Sector no." << "MFT entry no.");
+
+	// Show the root directory
+	// The root directory "." in NTFS is the 5th entry in the MFT
+	NTFS_BS* bootSector = (NTFS_BS*)this->bootSector;
+	displayCurrentFolder(drive, 5, bootSector);
+
 }
 
 void TreeFolderGUI::displayCurrentFolder(std::string drive, uint32_t cluster, FAT32_BS* bootSector) {
@@ -118,26 +131,13 @@ void TreeFolderGUI::displayCurrentFolder(std::string drive, uint32_t cluster, FA
 	}
 }
 
-void TreeFolderGUI::initializeTreeFolderNTFS() {
-	// Add listener for double click event on file/folder
-	connect(ui->treeFolder, &QTreeWidget::itemDoubleClicked, this, &TreeFolderGUI::onTreeItemDoubleClickedNTFS);
-
-	ui->treeFolder->setHeaderLabels(QStringList() << "Tên" << "Loại" << "Kích thước" << "Ngày tạo" << "Ngày sửa" << "Ngày truy cập" << "Thuộc tính" << "Sector no." << "MFT entry no.");
-
-	// Show the root directory
-	// The root directory "." in NTFS is the 5th entry in the MFT
-	NTFS_BS* bootSector = (NTFS_BS*)this->bootSector;
-	displayCurrentFolder(drive, 5, bootSector);
-
-}
-
 void TreeFolderGUI::displayCurrentFolder(std::string drive, uint64_t entryNum, NTFS_BS* bootSector) {
 	ui->treeFolder->clear();
 	int count = 0;
 
-	uint64_t oldMftEntryNum = stackMftEntries.empty() ? -1 : stackMftEntries.top();
+	uint64_t oldMftEntryNum = stackOldPaths.empty() ? -1 : stackOldPaths.top();
 	// Add items ".." to tree
-	if (stackMftEntries.size() > 0) {
+	if (stackOldPaths.size() > 0) {
 		// add tree item ".."
 		QTreeWidgetItem* item = new QTreeWidgetItem(ui->treeFolder);
 		item->setText(0, "..");
@@ -145,7 +145,7 @@ void TreeFolderGUI::displayCurrentFolder(std::string drive, uint64_t entryNum, N
 		item->setText(8, QString::fromStdString(std::to_string(oldMftEntryNum)));
 	}
 	
-	stackMftEntries.push(entryNum);
+	stackOldPaths.push(entryNum);
 
 	// Define MFT start sector
 	uint64_t mftStartOffset = bootSector->clusOfMFT * bootSector->secPerClus * bootSector->bytesPerSec;
@@ -170,8 +170,8 @@ void TreeFolderGUI::displayCurrentFolder(std::string drive, uint64_t entryNum, N
 	std::string signature = std::string((char*)entry->header.signature, sizeof(entry->header.signature));
 	if (signature == "BAAD") {
 		QMessageBox::critical(this, "Lỗi", "Không thể đọc thư mục này!");
-		stackMftEntries.pop();
-		displayCurrentFolder(drive, stackMftEntries.top(), bootSector);
+		stackOldPaths.pop();
+		displayCurrentFolder(drive, stackOldPaths.top(), bootSector);
 		return;
 	}
 
@@ -298,7 +298,6 @@ void TreeFolderGUI::displayCurrentFolder(std::string drive, uint64_t entryNum, N
 	// sort the folders to the top
 	ui->treeFolder->sortItems(0, Qt::AscendingOrder);
 
-
 }
 
 void TreeFolderGUI::addItemToTreeNTFS(NTFS_MftEntry* entry, const std::wstring& fileName, int mftEntryNum) {
@@ -318,7 +317,6 @@ void TreeFolderGUI::addItemToTreeNTFS(NTFS_MftEntry* entry, const std::wstring& 
 	(bootSector->szFileRecord < 0) ? fileRecordSize = 1 << abs(bootSector->szFileRecord) : fileRecordSize = bootSector->szFileRecord * bootSector->secPerClus * bootSector->bytesPerSec;
 	uint64_t mftSector = bootSector->clusOfMFT * bootSector->secPerClus + mftEntryNum * fileRecordSize / bootSector->bytesPerSec;
 	item->setText(7, QString::number(mftSector));
-
 
 	// Find the standard information attribute
 	NTFS_AttrHeader* attrHeader = (NTFS_AttrHeader*)((uint8_t*)entry + entry->header.attrOffset);
@@ -639,8 +637,8 @@ void TreeFolderGUI::openFolderFAT32(QTreeWidgetItem* item) {
 	// Open parent folder
 	if (fileName == L"..") {
 		// Pop out the last folder in current path
-		this->stackClusters.pop();
-		cluster = stackClusters.top();
+		this->stackOldPaths.pop();
+		cluster = stackOldPaths.top();
 		currentPath.erase(currentPath.find_last_of(L"\\"));
 		currentPath.erase(currentPath.find_last_of(L"\\"));
 		currentPath += L"\\";
@@ -650,7 +648,7 @@ void TreeFolderGUI::openFolderFAT32(QTreeWidgetItem* item) {
 		// Add folder to current path
 		cluster = std::stoi(item->text(8).toStdString());
 		currentPath = currentPath + fileName + L"\\";
-		stackClusters.push(cluster);
+		stackOldPaths.push(cluster);
 	}
 
 	// Display current folder
@@ -758,9 +756,9 @@ void TreeFolderGUI::openFolderNTFS(QTreeWidgetItem* item) {
 	// Open parent folder
 	if (fileName == L"..") {
 		// Pop out the last folder in current path
-		this->stackMftEntries.pop();
-		mftEntryNum = stackMftEntries.top();
-		this->stackMftEntries.pop();
+		this->stackOldPaths.pop();
+		mftEntryNum = stackOldPaths.top();
+		this->stackOldPaths.pop();
 		currentPath.erase(currentPath.find_last_of(L"\\"));
 		currentPath.erase(currentPath.find_last_of(L"\\"));
 		currentPath += L"\\";

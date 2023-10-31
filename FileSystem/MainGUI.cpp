@@ -12,19 +12,15 @@ MainGUI::MainGUI(QWidget *parent)
     initializeReadDisk();
     initializeDisplayTree();
 
-    // click on action ui->actionInfo and display information of authors, the layout should be beautiful
     // The authors are: 
     // 1. Nguyễn Đình Ánh - 21120171
     // 2. Nguyễn Tuấn Đạt - 21120172
-    // 3. Nguyễn Trần Thiên Phúc - 21120xxx
+    // 3. Nguyễn Trần Thiên Phúc - 21120114
     // Đồ án môn học Hệ điều hành
-// Đề tài: Đọc thông tin phân vùng và hiển thị cây thư mục gốc
-
-connect(ui->actionInfo, &QAction::triggered, this, [=]() {
+    // Đề tài: Đọc thông tin phân vùng và hiển thị cây thư mục gốc
+    connect(ui->actionInfo, &QAction::triggered, this, [=]() {
 		QMessageBox::information(this, "Thông tin", "Đồ án môn học Hệ điều hành\nĐề tài: Đọc thông tin phân vùng và hiển thị cây thư mục gốc\n\nNhóm sinh viên thực hiện:\n1. Nguyễn Đình Ánh - 21120171\n2. Nguyễn Tuấn Đạt - 21120172\n3. Nguyễn Trần Thiên Phúc - 21120114");
 	});
-
-
 
 }
 
@@ -33,9 +29,7 @@ MainGUI::~MainGUI()
     delete ui;
     delete bootSectorGUI;
     delete treeFolderGUI;
-    for (auto& gui : listGUI) {
-		delete gui;
-	}
+    for (auto& gui : listGUI) delete gui;
 }
 
 void MainGUI::initializeReadDisk() {

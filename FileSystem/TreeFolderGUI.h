@@ -28,8 +28,7 @@ private:
 	FileSystem fileSystemType;
 	std::string drive;
 	std::wstring currentPath;
-	std::stack<uint32_t> stackClusters; // used by FAT32
-	std::stack<uint64_t> stackMftEntries; // used by NTFS
+	std::stack<uint64_t> stackOldPaths;
 
 	// Initialize GUI
 	void initializeTreeFolder();
