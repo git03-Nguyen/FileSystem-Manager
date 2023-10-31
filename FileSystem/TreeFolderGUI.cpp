@@ -133,7 +133,6 @@ void TreeFolderGUI::displayCurrentFolder(std::string drive, uint32_t cluster, FA
 
 void TreeFolderGUI::displayCurrentFolder(std::string drive, uint64_t entryNum, NTFS_BS* bootSector) {
 	ui->treeFolder->clear();
-	int count = 0;
 
 	uint64_t oldMftEntryNum = stackOldPaths.empty() ? -1 : stackOldPaths.top();
 	// Add items ".." to tree
@@ -147,189 +146,211 @@ void TreeFolderGUI::displayCurrentFolder(std::string drive, uint64_t entryNum, N
 	
 	stackOldPaths.push(entryNum);
 
-	// Define MFT start sector
+	// Define MFT start offset
 	uint64_t mftStartOffset = bootSector->clusOfMFT * bootSector->secPerClus * bootSector->bytesPerSec;
 
 	// Define file record size (bytes): positive: num. of clusters || negative: 2^abs(value) bytes ; i.e: 0xf6 = -10 => 2^10 = 1024 bytes/File Record Segment
 	int64_t fileRecordSize;
 	(bootSector->szFileRecord < 0) ? fileRecordSize = 1 << abs(bootSector->szFileRecord) : fileRecordSize = bootSector->szFileRecord * bootSector->secPerClus * bootSector->bytesPerSec;
 
-	// Define index block size, as above
-	int64_t indexRecordSize;
-	(bootSector->szIndexBuff < 0) ? indexRecordSize = 1 << abs(bootSector->szIndexBuff) : indexRecordSize = bootSector->szIndexBuff * bootSector->secPerClus * bootSector->bytesPerSec;
-
-	// Find the sector start the entry
-	uint64_t entryStartOffset = mftStartOffset + entryNum * fileRecordSize / bootSector->bytesPerSec * bootSector->bytesPerSec;
+	// Find the offset starting the entry
+	uint64_t entryStartOffset = mftStartOffset + entryNum * fileRecordSize;
 
 	// Read the entry
 	uint8_t* entryBuffer = new uint8_t[fileRecordSize] { 0 };
 	readByte(drive, entryStartOffset, entryBuffer, fileRecordSize);
-	NTFS_MftEntry* entry = (NTFS_MftEntry*)entryBuffer;
+	
+	// Read the entry header
+	NTFS_MftEntryHeader* entryHeader = (NTFS_MftEntryHeader*)entryBuffer;
 
 	// Read signature if it is a "FILE" or "BAAD"
-	std::string signature = std::string((char*)entry->header.signature, sizeof(entry->header.signature));
+	std::string signature = std::string((char*)entryHeader->signature, sizeof(entryHeader->signature));
 	if (signature == "BAAD") {
 		QMessageBox::critical(this, "Lỗi", "Không thể đọc thư mục này!");
 		stackOldPaths.pop();
 		displayCurrentFolder(drive, stackOldPaths.top(), bootSector);
+		delete[] entryBuffer;
 		return;
 	}
 
-	// Read the root index attribute
-	NTFS_AttrHeader* attrHeader = (NTFS_AttrHeader*)((uint8_t*)entry + entry->header.attrOffset);
-	NTFS_AttrIndexRoot* indexRoot = nullptr;
-	count = 0;
-	while ((uint8_t*)attrHeader < entryBuffer + fileRecordSize && count++ < 20) {
-	if (attrHeader->type == 0x90) {
-			indexRoot = (NTFS_AttrIndexRoot*)attrHeader;
-			break;
-	}
-	attrHeader = (NTFS_AttrHeader*)((uint8_t*)attrHeader + attrHeader->length);
-}
-	if (indexRoot) {
-		// read each index entry
-		NTFS_IndexEntry* indexEntry = (NTFS_IndexEntry*)((uint8_t*)&indexRoot->offsetToFirstIndexEntry + indexRoot->offsetToFirstIndexEntry);
-		uint8_t* indexEntryEnd = (uint8_t*)indexRoot + indexRoot->header.length;
-		count = 0;
-		while ((uint8_t*)indexEntry < indexEntryEnd && count++<20) {
-			// If it's the last entry, break
-			if (indexEntry->flags == 2) break;
-			// If it's the DOS name or if it's ".", continue 
-			if (indexEntry->fileNamespace == 2) {
-				indexEntry = (NTFS_IndexEntry*)((uint8_t*)indexEntry + indexEntry->length);
-				continue;
-			}
-			// Get the file name
-			std::wstring fileName = std::wstring(&indexEntry->fileName, indexEntry->nameLength);
-			if (fileName == L"." || fileName == L"") {
-				indexEntry = (NTFS_IndexEntry*)((uint8_t*)indexEntry + indexEntry->length);
-				continue;
-			}
+	// Jump to the first attribute
+	NTFS_AttrBasicHeader* attrHeader = (NTFS_AttrBasicHeader*)((uint8_t*)entryHeader + entryHeader->attrOffset);
 
-			// Find the entry in MFT
-			uint64_t mftEntryNum = indexEntry->reference;
-			// Set 2 lower bytes to 0
-			mftEntryNum = mftEntryNum & 0x0000FFFFFFFFFFFF;
-			// Read the entry
-			uint64_t mftEntryOffset = mftStartOffset + mftEntryNum * fileRecordSize / bootSector->bytesPerSec * bootSector->bytesPerSec;
-			uint8_t* mftEntryBuffer2 = new uint8_t[fileRecordSize]{ 0 };
-			readByte(drive, mftEntryOffset, mftEntryBuffer2, fileRecordSize);
-			addItemToTreeNTFS((NTFS_MftEntry*)mftEntryBuffer2, fileName, mftEntryNum);
-			delete[] mftEntryBuffer2;
-
-			indexEntry = (NTFS_IndexEntry*)((uint8_t*)indexEntry + indexEntry->length);
-
-		}
-	}
-
-	// Read the index allocation attribute -> always non-resident
-	attrHeader = (NTFS_AttrHeader*)((uint8_t*)entry + entry->header.attrOffset);
-	NTFS_AttrNonResident* indexAlloc = nullptr;
-	count = 0;
-	while ((uint8_t*)attrHeader < entryBuffer + fileRecordSize&& count++<20) {
-		if (attrHeader->type == 0xA0) {
-			indexAlloc = (NTFS_AttrNonResident*)attrHeader;
+	// Find and read the $ROOT_INDEX attribute - it's always resident
+	NTFS_AttrResident* rootIndex = nullptr;
+	while ((uint8_t*)attrHeader < (uint8_t*)entryHeader + entryHeader->usedLength) {
+		if (attrHeader->type == 0x90) {
+			rootIndex = (NTFS_AttrResident*)attrHeader;
 			break;
 		}
-		attrHeader = (NTFS_AttrHeader*)((uint8_t*)attrHeader + attrHeader->length);
+		attrHeader = (NTFS_AttrBasicHeader*)((uint8_t*)attrHeader + attrHeader->fullLength);
 	}
-	if (!indexAlloc) return;
 
-	// Read the data runs
-	uint8_t* dataRun = (uint8_t*)indexAlloc + indexAlloc->dataRunOffset;
-	uint8_t* dataRunEnd = (uint8_t*)indexAlloc + indexAlloc->header.length;
-	// The first byte: take lower 4 bit and higher 4 bit
-	uint8_t lower4bit = *dataRun & 0x0F;
-	uint8_t higher4bit = *dataRun >> 4;
-	dataRun = dataRun + 1;
-	dataRun = dataRun + lower4bit;
-
-	// Read "higher4bit" bytes
-	uint64_t clusterNum = 0;
-	for (int i = 0; i < higher4bit; i++) {
-	clusterNum = clusterNum | (uint64_t)(*dataRun << (i * 8));
-	dataRun = dataRun + 1;
-	}
-	uint64_t dataOffset = clusterNum * bootSector->secPerClus * bootSector->bytesPerSec;
-
-	// Read the index file in dataOffset
-	uint8_t* indexBuffer = new uint8_t[indexRecordSize] { 0 };
-	readByte(drive, dataOffset, indexBuffer, indexRecordSize);
-	NTFS_IndexFile* indexFile = (NTFS_IndexFile*)indexBuffer;
-
-	// Read each index entry
-	NTFS_IndexEntry* indexEntry = (NTFS_IndexEntry*)((uint8_t*)&indexFile->indexEntryOffset + indexFile->indexEntryOffset);
-	uint8_t* indexEntryEnd = (uint8_t*)indexFile + indexRecordSize;
-	count = 0;
-	while ((uint8_t*)indexEntry < indexEntryEnd && count++<20) {
-		// If it's the last entry, break
-		if (indexEntry->flags == 2) break;
-		// If it's the DOS name or if it's ".", continue 
-		if (indexEntry->fileNamespace == 2) {
-			indexEntry = (NTFS_IndexEntry*)((uint8_t*)indexEntry + indexEntry->length);
-			continue;
+	if (rootIndex) {
+		NTFS_IndexRootDataHeader* rootIndexData = (NTFS_IndexRootDataHeader*)((uint8_t*)rootIndex + rootIndex->attrOffset);
+		if (rootIndexData->flags == 0x00) {
+			// The children are only contain inside $INDEX_ROOT, no need to read $INDEX_ALLOCATION
+			NTFS_IndexEntry* indexEntry = (NTFS_IndexEntry*)((uint8_t*)&rootIndexData->offsetToFirstIndexEntry + rootIndexData->offsetToFirstIndexEntry);
+			while ((uint8_t*)indexEntry < (uint8_t*)&rootIndexData->offsetToFirstIndexEntry + rootIndexData->totalSizeOfEntries) {
+				if (indexEntry->reference == 0x00 && indexEntry->flags == 0x02) break; // terminator
+				// Only read 6 low bytes of reference, that's the MFT entry number
+				uint64_t mftEntryNum = indexEntry->reference & 0x0000FFFFFFFFFFFF;
+				// Read info of the entry and add it to tree
+				uint64_t mftEntryOffset = mftStartOffset + mftEntryNum * fileRecordSize;
+				uint8_t* mftEntryBuffer = new uint8_t[fileRecordSize] { 0 };
+				readByte(drive, mftEntryOffset, mftEntryBuffer, fileRecordSize);
+				addItemToTreeNTFS((NTFS_MftEntryHeader*)mftEntryBuffer, mftEntryNum);
+				delete[] mftEntryBuffer;
+				indexEntry = (NTFS_IndexEntry*)((uint8_t*)indexEntry + indexEntry->length);
+			}
 		}
-		// Get the file name
-		std::wstring fileName = std::wstring(&indexEntry->fileName, indexEntry->nameLength);
-		if (fileName == L"." || fileName == L"") {
-			indexEntry = (NTFS_IndexEntry*)((uint8_t*)indexEntry + indexEntry->length);
-			continue;
-		}
-		
-		// Find the entry in MFT
-		uint64_t mftEntryNum = indexEntry->reference;
-		// Set 2 lower bytes to 0
-		mftEntryNum = mftEntryNum & 0x0000FFFFFFFFFFFF;
-		// Read the entry
-		uint64_t mftEntryOffset = mftStartOffset + mftEntryNum * fileRecordSize / bootSector->bytesPerSec * bootSector->bytesPerSec;
-		uint8_t* mftEntryBuffer2 = new uint8_t[fileRecordSize] { 0 };
-		readByte(drive, mftEntryOffset, mftEntryBuffer2, fileRecordSize);
-		addItemToTreeNTFS((NTFS_MftEntry*)mftEntryBuffer2, fileName, mftEntryNum);
-		delete[] mftEntryBuffer2;
+		else if (rootIndexData->flags == 0x01) {
+			// The children are contain inside $INDEX_ALLOCATION, read $INDEX_ALLOCATION - always non-resident
+			NTFS_AttrNonResident* indexAlloc = nullptr;
+			attrHeader = (NTFS_AttrBasicHeader*)((uint8_t*)entryHeader + entryHeader->attrOffset);
+			while ((uint8_t*)attrHeader < (uint8_t*)entryHeader + entryHeader->usedLength) {
+				if (attrHeader->type == 0xA0) {
+					indexAlloc = (NTFS_AttrNonResident*)attrHeader;
+					break;
+				}
+				attrHeader = (NTFS_AttrBasicHeader*)((uint8_t*)attrHeader + attrHeader->fullLength);
+			}
+			if (!indexAlloc) return;
+			// Read the data runs until first byte is 0x00
+			uint8_t* dataRun = (uint8_t*)indexAlloc + indexAlloc->dataRunOffset;
+			while (*dataRun != 0x00 && dataRun < (uint8_t*)indexAlloc + indexAlloc->header.fullLength) {
+				// The first byte: take lower 4 bit and higher 4 bit
+				uint8_t lower4bit = *dataRun & 0x0F;
+				uint8_t higher4bit = *dataRun >> 4;
+				dataRun = dataRun + 1;
+				// Read "lower4bit" bytes
+				uint64_t sizeInCluster = 0;
+				for (int i = 0; i < lower4bit; i++) {
+					sizeInCluster = sizeInCluster | (uint8_t)(*dataRun << (i * 8));
+					dataRun = dataRun + 1;
+				}
+				// Read "higher4bit" bytes
+				uint64_t clusterOffset = 0;
+				for (int i = 0; i < higher4bit; i++) {
+					clusterOffset = clusterOffset | (uint64_t)(*dataRun << (i * 8));
+					dataRun = dataRun + 1;
+				}
 
-		indexEntry = (NTFS_IndexEntry*)((uint8_t*)indexEntry + indexEntry->length);
+				// Read the data in clusterOffset, by sizeInCluster clusters
+				uint64_t sizeInByte = sizeInCluster * bootSector->secPerClus * bootSector->bytesPerSec;
+				uint8_t* indexBuffer = new uint8_t[sizeInByte] { 0 };
+				readByte(drive, clusterOffset * bootSector->secPerClus * bootSector->bytesPerSec, indexBuffer, sizeInByte);
+				NTFS_IndexFile* indexFile = (NTFS_IndexFile*)indexBuffer;
+				// Read each index entry
+				NTFS_IndexEntry* indexEntry = (NTFS_IndexEntry*)((uint8_t*)&indexFile->indexEntryOffset + indexFile->indexEntryOffset);
+				while ((uint8_t*)indexEntry < (uint8_t*)&indexFile->indexEntryOffset + indexFile->indexEntrySize) {
+					if (indexEntry->reference == 0x00 && indexEntry->flags == 0x02) break; // terminator
+					// Only read 6 low bytes of reference, that's the MFT entry number
+					uint64_t mftEntryNum = indexEntry->reference & 0x0000FFFFFFFFFFFF;
+					// Read info of the entry and add it to tree
+					uint64_t mftEntryOffset = mftStartOffset + mftEntryNum * fileRecordSize;
+					uint8_t* mftEntryBuffer = new uint8_t[fileRecordSize] { 0 };
+					readByte(drive, mftEntryOffset, mftEntryBuffer, fileRecordSize);
+					addItemToTreeNTFS((NTFS_MftEntryHeader*)mftEntryBuffer, mftEntryNum);
+					delete[] mftEntryBuffer;
+					indexEntry = (NTFS_IndexEntry*)((uint8_t*)indexEntry + indexEntry->length);
+				}
+				delete[] indexBuffer;
+				
+			}
+
+		}
 
 	}
 
 	delete[] entryBuffer;
-	delete[] indexBuffer;
-
-
 	// sort the folders to the top
 	ui->treeFolder->sortItems(0, Qt::AscendingOrder);
 
 }
 
-void TreeFolderGUI::addItemToTreeNTFS(NTFS_MftEntry* entry, const std::wstring& fileName, int mftEntryNum) {
-// Add items to tree: (name, type, size, time created, time modified, date accessed, attributes, sectors, cluster start):
+void TreeFolderGUI::addItemToTreeNTFS(NTFS_MftEntryHeader* entry, int mftEntryNum) {
+	
+	// Read $STANDARD_INFORMATION attribute - suggest that it's always resident
+	NTFS_AttrBasicHeader* attrHeader = (NTFS_AttrBasicHeader*)((uint8_t*)entry + entry->attrOffset);
+	NTFS_AttrStandardInfo* standardInfo = nullptr;
+	while ((uint8_t*)attrHeader < (uint8_t*)entry + entry->usedLength && attrHeader->type != 0xFFFFFFFF) {
+		if (attrHeader->type == 0x10) {
+			NTFS_AttrResident* standardInfoHeader = (NTFS_AttrResident*)attrHeader;
+			standardInfo = (NTFS_AttrStandardInfo*)((uint8_t*)standardInfoHeader + standardInfoHeader->attrOffset);
+			break;
+		}
+		attrHeader = (NTFS_AttrBasicHeader*)((uint8_t*)attrHeader + attrHeader->fullLength);
+	}
+	if (!standardInfo) return;
+
+	// Read $FILE_NAME attribute - suggest that it's always resident
+	attrHeader = (NTFS_AttrBasicHeader*)((uint8_t*)attrHeader + attrHeader->fullLength);
+	NTFS_AttrFileName* fileName = nullptr;
+	while ((uint8_t*)attrHeader < (uint8_t*)entry + entry->usedLength && attrHeader->type != 0xFFFFFFFF) {
+		if (attrHeader->type == 0x30) {
+			NTFS_AttrResident* fileNameHeader = (NTFS_AttrResident*)attrHeader;
+			fileName = (NTFS_AttrFileName*)((uint8_t*)fileNameHeader + fileNameHeader->attrOffset);
+			break;
+		}
+		attrHeader = (NTFS_AttrBasicHeader*)((uint8_t*)attrHeader + attrHeader->fullLength);
+	}
+	if (!fileName) return;
+
+	// Read $DATA attribute to get size
+	attrHeader = (NTFS_AttrBasicHeader*)((uint8_t*)attrHeader + attrHeader->fullLength);
+	NTFS_AttrResident* dataResident = nullptr;
+	NTFS_AttrNonResident* dataNonResident = nullptr;
+	while ((uint8_t*)attrHeader < (uint8_t*)entry + entry->usedLength && attrHeader->type != 0xFFFFFFFF) {
+		if (attrHeader->type == 0x80) {
+			if (attrHeader->nonResident) {
+				dataNonResident = (NTFS_AttrNonResident*)attrHeader;
+			}
+			else {
+				dataResident = (NTFS_AttrResident*)attrHeader;
+			}
+			break;
+		}
+		attrHeader = (NTFS_AttrBasicHeader*)((uint8_t*)attrHeader + attrHeader->fullLength);
+	}
+
+	// If namespace is DOS, skip it
+	if (fileName->nameSpace == 0x02) return;
+	// If name is ".", skip it
+	if (fileName->fileName == L'.' && fileName->nameLength == 1) return;
+	
 	QTreeWidgetItem* item = new QTreeWidgetItem(ui->treeFolder);
 	item->setTextAlignment(2, Qt::AlignRight);
 
-	// set file name is fileName
-	item->setText(0, QString::fromStdWString(fileName));
+	// Set file name using wchar_t &fileName->fileName
+	std::wstring name = std::wstring(&fileName->fileName, fileName->nameLength);
+	item->setText(0, QString::fromStdWString(name));
+	// TODO: maybe update sequence number
 
-	// set mft number is mftEntryNum
-	item->setText(8, QString::number(mftEntryNum));
-
-	// Set MFT sector
-	NTFS_BS* bootSector = (NTFS_BS*)this->bootSector;
-	int64_t fileRecordSize;
-	(bootSector->szFileRecord < 0) ? fileRecordSize = 1 << abs(bootSector->szFileRecord) : fileRecordSize = bootSector->szFileRecord * bootSector->secPerClus * bootSector->bytesPerSec;
-	uint64_t mftSector = bootSector->clusOfMFT * bootSector->secPerClus + mftEntryNum * fileRecordSize / bootSector->bytesPerSec;
-	item->setText(7, QString::number(mftSector));
-
-	// Find the standard information attribute
-	NTFS_AttrHeader* attrHeader = (NTFS_AttrHeader*)((uint8_t*)entry + entry->header.attrOffset);
-	NTFS_AttrStandardInfo* standardInfo = nullptr;
-	while ((uint8_t*)attrHeader < (uint8_t*)entry + fileRecordSize) {
-		if (attrHeader->type == 0x10) {
-			standardInfo = (NTFS_AttrStandardInfo*)attrHeader;
-			break;
-		}
-		attrHeader = (NTFS_AttrHeader*)((uint8_t*)attrHeader + attrHeader->length);
+	// Set type (folder or file) by checking flags of entry: 0x00: not in use, 0x01: in use, 0x02: directory, 0x03: directory and in use
+	std::string type;
+	if (entry->flags == 0x01) {
+		type = "Tập tin";
 	}
+	else if (entry->flags == 0x02 || entry->flags == 0x03) {
+		type = "Thư mục";
+	}
+	else {
+		type = "Không xác định";
+		return;
+	}
+	item->setText(1, QString::fromStdString(type));
 
-	if (!standardInfo) return;
+	// Set size
+	if (dataResident) {
+		item->setText(2, QString::number(dataResident->attrLength));
+	}
+	else if (dataNonResident) {
+		item->setText(2, QString::number(dataNonResident->realSize));
+	}
+	else {
+		item->setText(2, "0");
+	}
 
 	// Read time created from standard information attribute
 	// The time is saved in 100-nanosecond intervals since January 1, 1601 (UTC)
@@ -358,51 +379,37 @@ void TreeFolderGUI::addItemToTreeNTFS(NTFS_MftEntry* entry, const std::wstring& 
 	std::string timeAccessed = std::to_string(systemTime.wYear) + "-" + std::to_string(systemTime.wMonth) + "-" + std::to_string(systemTime.wDay) + " " + std::to_string(systemTime.wHour) + ":" + std::to_string(systemTime.wMinute) + ":" + std::to_string(systemTime.wSecond);
 	item->setText(5, QString::fromStdString(timeAccessed));
 
-	// Read the flags from standard information attribute
+	// Read the flags from file name attribute
 	std::string attributes = "";
-	if (standardInfo->fileFlags & 0x0001) attributes += "Read-only, ";
-	if (standardInfo->fileFlags & 0x0002) attributes += "Hidden, ";
-	if (standardInfo->fileFlags & 0x0004) attributes += "System, ";
-	if (standardInfo->fileFlags & 0x0020) attributes += "Archive, ";
-	if (standardInfo->fileFlags & 0x0040) attributes += "Device, ";
-	if (standardInfo->fileFlags & 0x0080) attributes += "Normal, ";
-	if (standardInfo->fileFlags & 0x0100) attributes += "Temporary, ";
-	if (standardInfo->fileFlags & 0x0200) attributes += "Sparse file, ";
-	if (standardInfo->fileFlags & 0x0400) attributes += "Reparse point, ";
-	if (standardInfo->fileFlags & 0x0800) attributes += "Compressed, ";
-	if (standardInfo->fileFlags & 0x1000) attributes += "Offline, ";
-	if (standardInfo->fileFlags & 0x2000) attributes += "Not content indexed, ";
-	if (standardInfo->fileFlags & 0x4000) attributes += "Encrypted, ";
-	attributes.erase(attributes.find_last_not_of(", ") + 1);
-	// Set attributes to item
+	if (fileName->fileFlags & 0x01) attributes += "Read-only, ";
+	if (fileName->fileFlags & 0x02) attributes += "Hidden, ";
+	if (fileName->fileFlags & 0x04) attributes += "System, ";
+	if (fileName->fileFlags & 0x08) attributes += "Archive, ";
+	if (fileName->fileFlags & 0x10) attributes += "Device, ";
+	if (fileName->fileFlags & 0x20) attributes += "Normal, ";
+	if (fileName->fileFlags & 0x40) attributes += "Temporary, ";
+	if (fileName->fileFlags & 0x80) attributes += "Sparse file, ";
+	if (fileName->fileFlags & 0x100) attributes += "Reparse point, ";
+	if (fileName->fileFlags & 0x200) attributes += "Compressed, ";
+	if (fileName->fileFlags & 0x400) attributes += "Offline, ";
+	if (fileName->fileFlags & 0x800) attributes += "Not content indexed, ";
+	if (fileName->fileFlags & 0x1000) attributes += "Encrypted, ";
+	if (fileName->fileFlags & 0x2000) attributes += "Directory, ";
+	if (attributes.size() > 0) {
+		attributes.pop_back();
+		attributes.pop_back();
+	}
 	item->setText(6, QString::fromStdString(attributes));
 
-	
-	// Find the data attribute
-	attrHeader = (NTFS_AttrHeader*)((uint8_t*)entry + entry->header.attrOffset);
-	int count = 0;
-	NTFS_AttrDataNonRes* data = nullptr;
-	while ((uint8_t*)attrHeader < (uint8_t*)entry + fileRecordSize) {
-		if (attrHeader->type == 0x80) {
-			data = (NTFS_AttrDataNonRes*)attrHeader;
-			break;
-		}
-		attrHeader = (NTFS_AttrHeader*)((uint8_t*)attrHeader + attrHeader->length);
-		count++;
-		if (count > 10) break;
-	}
+	// Set MFT sector
+	NTFS_BS* bootSector = (NTFS_BS*)this->bootSector;
+	int64_t fileRecordSize;
+	(bootSector->szFileRecord < 0) ? fileRecordSize = 1 << abs(bootSector->szFileRecord) : fileRecordSize = bootSector->szFileRecord * bootSector->secPerClus * bootSector->bytesPerSec;
+	uint64_t mftSector = bootSector->clusOfMFT * bootSector->secPerClus + mftEntryNum * fileRecordSize / bootSector->bytesPerSec;
+	item->setText(7, QString::number(mftSector));
 
-	if (data) {
-		// Set size, type
-		std::string size = std::to_string(data->dataSize);
-		item->setText(2, QString::fromStdString(size));
-		item->setText(1, "Tập tin");
-
-	}
-	else {
-		item->setText(1, "Thư mục");
-	}
-
+	// Set MFT entry number
+	item->setText(8, QString::number(mftEntryNum));
 }
 
 void TreeFolderGUI::addItemToTreeFAT32(const FAT32_DirectoryEntry& entry, std::wstring name) {
@@ -671,75 +678,92 @@ void TreeFolderGUI::openFileNTFS(QTreeWidgetItem* item) {
 	uint64_t mftEntryOffset = mftEntrySector * bootSector->bytesPerSec;
 	uint8_t* mftEntryBuffer = new uint8_t[fileRecordSize] { 0 };
 	readByte(drive, mftEntryOffset, mftEntryBuffer, fileRecordSize);
-	NTFS_MftEntry* entry = (NTFS_MftEntry*)mftEntryBuffer;
+	NTFS_MftEntryHeader* entryHeader = (NTFS_MftEntryHeader*)mftEntryBuffer;
 
-	// Find the data attribute
-	NTFS_AttrHeader* attrHeader = (NTFS_AttrHeader*)((uint8_t*)entry + entry->header.attrOffset);
-	int count = 0;
-	NTFS_AttrDataNonRes* data = nullptr;
-	while ((uint8_t*)attrHeader < (uint8_t*)entry + fileRecordSize && count++<20) {
+	// Find the $DATA attribute
+	NTFS_AttrBasicHeader* attrHeader = (NTFS_AttrBasicHeader*)((uint8_t*)entryHeader + entryHeader->attrOffset);
+	NTFS_AttrResident* dataResident = nullptr;
+	NTFS_AttrNonResident* dataNonResident = nullptr;
+	while ((uint8_t*)attrHeader < (uint8_t*)entryHeader + entryHeader->usedLength) {
 		if (attrHeader->type == 0x80) {
-			data = (NTFS_AttrDataNonRes*)attrHeader;
-			break;
-		}
-		attrHeader = (NTFS_AttrHeader*)((uint8_t*)attrHeader + attrHeader->length);
-	}
-
-	// See if it is resident or non-resident
-	// If it is resident, read the whole file
-	if (data->header.nonResident == 0) {
-		NTFS_AttrDataRes* dataRes = (NTFS_AttrDataRes*)data;
-		if (dataRes->length != 0) {
-			char* dataString = (char*)((uint8_t*)dataRes + dataRes->attrOffset);
-			//check for unicode
-			if (*(uint16_t*)dataString == 0xFEFF) {
-				// unicode
-				ui->txtPreview->insertPlainText(QString::fromStdWString(std::wstring((wchar_t*)dataString + 1, (dataRes->length - 2) / 2)));
+			if (attrHeader->nonResident) {
+				dataNonResident = (NTFS_AttrNonResident*)attrHeader;
 			}
 			else {
-				// ascii
-				ui->txtPreview->insertPlainText(QString::fromStdString(std::string(dataString, dataRes->length)));
+				dataResident = (NTFS_AttrResident*)attrHeader;
 			}
+			break;
 		}
-		
+		attrHeader = (NTFS_AttrBasicHeader*)((uint8_t*)attrHeader + attrHeader->fullLength);
 	}
-	else {
-		// Read data runs
-		uint8_t* dataRun = (uint8_t*)data + data->dataRunOffset;
-		int64_t fileSize = data->dataSize;
 
-		while (true) {
-			// get the high half byte and low half byte of the first byte
-			uint8_t highHalfByte = dataRun[0] >> 4;
-			uint8_t lowHalfByte = dataRun[0] & 0x0F;
-
-			// get the size in clusters
-			uint64_t length = 0;
-			for (int i = 1; i <= lowHalfByte; i++) {
-				length += dataRun[i] << (8 * (i - 1));
+	// If the file is resident, read inside the MFT entry / else go to data runs
+	bool isUnicode = false;
+	bool isUTF8 = false;
+	bool firstCheck = true;
+	if (dataResident) {
+		// Read from offset to attribute by length bytes
+		uint8_t* start = (uint8_t*)dataResident + dataResident->attrOffset;
+		uint32_t length = dataResident->attrLength;
+		
+		// Check for unicode
+		if (*(uint16_t*)start == 0xFEFF) {
+			// unicode
+			ui->txtPreview->insertPlainText(QString::fromStdWString(std::wstring((wchar_t*)start + 1, (length - 2) / 2)));
+		}
+		else {
+			// ascii or utf8
+			ui->txtPreview->insertPlainText(QString::fromStdString(std::string((char*)start, length)));
+		}
+	}
+	else if (dataNonResident) {
+		// Read the data runs until first byte is 0x00
+		uint8_t* dataRun = (uint8_t*)dataNonResident + dataNonResident->dataRunOffset;
+		while (*dataRun != 0x00 && dataRun < (uint8_t*)dataNonResident + dataNonResident->header.fullLength) {
+			// The first byte: take lower 4 bit and higher 4 bit
+			uint8_t lower4bit = *dataRun & 0x0F;
+			uint8_t higher4bit = *dataRun >> 4;
+			dataRun = dataRun + 1;
+			// Read "lower4bit" bytes
+			uint64_t sizeInCluster = 0;
+			for (int i = 0; i < lower4bit; i++) {
+				sizeInCluster = sizeInCluster | (uint8_t)(*dataRun << (i * 8));
+				dataRun = dataRun + 1;
 			}
-			dataRun += lowHalfByte;
-
-			// get the offset in clusters
-			uint64_t offset = 0;
-			for (int i = 1; i <= highHalfByte; i++) {
-				offset += dataRun[i] << (8 * (i - 1));
+			// Read "higher4bit" bytes
+			uint64_t clusterOffset = 0;
+			for (int i = 0; i < higher4bit; i++) {
+				clusterOffset = clusterOffset | (uint64_t)(*dataRun << (i * 8));
+				dataRun = dataRun + 1;
 			}
-			dataRun += highHalfByte + 1;
 
-			// read file
-			uint8_t* sectorBuffer = nullptr;
+			// Read the data in clusterOffset, by sizeInCluster clusters
+			uint64_t sizeInByte = sizeInCluster * bootSector->secPerClus * bootSector->bytesPerSec;
+			uint8_t* dataBuffer = new uint8_t[sizeInByte]{ 0 };
+			readByte(drive, (clusterOffset * bootSector->secPerClus * bootSector->bytesPerSec), dataBuffer, sizeInByte);
 
-			// read at offset and length
-			sectorBuffer = new uint8_t[length * bootSector->secPerClus * bootSector->bytesPerSec]{ 0 };
-			fileSize -= readByte(drive, offset * bootSector->secPerClus * bootSector->bytesPerSec, sectorBuffer, length * bootSector->secPerClus * bootSector->bytesPerSec);
+			// Check for unicode
+			if (firstCheck) {
+				if (*(uint16_t*)dataBuffer == 0xFEFF) {
+					isUnicode = true;
+					ui->txtPreview->insertPlainText(QString::fromStdWString(std::wstring((wchar_t*)dataBuffer + 1, (sizeInByte - 2) / 2)));
+				}
+				else {
+					isUTF8 = true;
+					ui->txtPreview->insertPlainText(QString::fromStdString(std::string((char*)dataBuffer, sizeInByte)));
+				}
+			}
+			else {
+				if (isUnicode) {
+					ui->txtPreview->insertPlainText(QString::fromStdWString(std::wstring((wchar_t*)dataBuffer, sizeInByte / 2)));
+				}
+				else if (isUTF8) {
+					ui->txtPreview->insertPlainText(QString::fromStdString(std::string((char*)dataBuffer, sizeInByte)));
+				}
+			}
+			
+			delete[] dataBuffer;
 
-			// add text to text preview
-			ui->txtPreview->insertPlainText(QString::fromStdString(std::string((char*)sectorBuffer, length * bootSector->secPerClus * bootSector->bytesPerSec)));
-
-			delete[] sectorBuffer;
-
-			if (fileSize <= 0 || dataRun[0] == 0) break;
 		}
 	}
 

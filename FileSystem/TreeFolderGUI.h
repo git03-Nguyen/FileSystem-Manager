@@ -41,7 +41,7 @@ private:
 
 	// Helper to add file/folder to tree
 	void addItemToTreeFAT32(const FAT32_DirectoryEntry& entry, std::wstring name = L"");
-	void addItemToTreeNTFS(NTFS_MftEntry* entry, const std::wstring& fileName, int mftEntryNum);
+	void addItemToTreeNTFS(NTFS_MftEntryHeader* entry, int mftEntryNum);
 
 	// Handle double click on file/folder
 	void onTreeItemDoubleClickedFAT32(QTreeWidgetItem* item, int column);
