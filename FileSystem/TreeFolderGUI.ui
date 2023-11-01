@@ -173,15 +173,24 @@
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <item>
-          <widget class="QTextEdit" name="txtPreview">
+          <widget class="QPlainTextEdit" name="txtPreview">
            <property name="font">
             <font>
              <pointsize>10</pointsize>
              <bold>false</bold>
             </font>
            </property>
+           <property name="documentTitle">
+            <string notr="true"/>
+           </property>
            <property name="readOnly">
             <bool>true</bool>
+           </property>
+           <property name="plainText">
+            <string notr="true"/>
+           </property>
+           <property name="placeholderText">
+            <string notr="true"/>
            </property>
           </widget>
          </item>

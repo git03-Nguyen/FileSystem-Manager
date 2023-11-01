@@ -173,6 +173,13 @@ void TreeFolderGUI::displayCurrentFolder(std::string drive, uint64_t entryNum, N
 		return;
 	}
 
+	// Find and replace the Update Sequence Number with the Update Sequence Array
+	uint16_t usa = *(uint16_t*)((uint8_t*)entryHeader + entryHeader->fixupOffset + 2);
+	// Go to each ends of sector and replace with the usa
+	for (int i = 0; i < entryHeader->usedLength; i += bootSector->bytesPerSec) {
+		*(uint16_t*)(entryBuffer + i + bootSector->bytesPerSec - 2) = usa;
+	}
+
 	// Jump to the first attribute
 	NTFS_AttrBasicHeader* attrHeader = (NTFS_AttrBasicHeader*)((uint8_t*)entryHeader + entryHeader->attrOffset);
 
@@ -683,6 +690,13 @@ void TreeFolderGUI::openFileNTFS(QTreeWidgetItem* item) {
 	uint8_t* mftEntryBuffer = new uint8_t[fileRecordSize] { 0 };
 	readByte(drive, mftEntryOffset, mftEntryBuffer, fileRecordSize);
 	NTFS_MftEntryHeader* entryHeader = (NTFS_MftEntryHeader*)mftEntryBuffer;
+
+	// Find and replace the Update Sequence Number with the Update Sequence Array
+	uint16_t usa = *(uint16_t*)((uint8_t*)entryHeader + entryHeader->fixupOffset + 2);
+	// Go to each ends of sector and replace with the usa
+	for (int i = 0; i < entryHeader->usedLength; i += bootSector->bytesPerSec) {
+		*(uint16_t*)(mftEntryBuffer + i + bootSector->bytesPerSec - 2) = usa;
+	}
 
 	// Find the $DATA attribute
 	NTFS_AttrBasicHeader* attrHeader = (NTFS_AttrBasicHeader*)((uint8_t*)entryHeader + entryHeader->attrOffset);
