@@ -19,7 +19,7 @@ MainGUI::MainGUI(QWidget *parent)
     // Đồ án môn học Hệ điều hành
     // Đề tài: Đọc thông tin phân vùng và hiển thị cây thư mục gốc
     connect(ui->actionInfo, &QAction::triggered, this, [=]() {
-		QMessageBox::information(this, "Thông tin", "Đồ án môn học Hệ điều hành\nĐề tài: Đọc thông tin phân vùng và hiển thị cây thư mục gốc\n\nNhóm sinh viên thực hiện:\n1. Nguyễn Đình Ánh - 21120171\n2. Nguyễn Tuấn Đạt - 21120172\n3. Nguyễn Trần Thiên Phúc - 21120114");
+		QMessageBox::information(this, "Thông tin", "Đồ án môn học Hệ điều hành\nĐề tài: Hệ thống quản lý tập tin\n\nNhóm sinh viên thực hiện:\n1. Nguyễn Đình Ánh - 21120171\n2. Nguyễn Tuấn Đạt - 21120172\n3. Nguyễn Trần Thiên Phúc - 21120114");
 	});
 
 }

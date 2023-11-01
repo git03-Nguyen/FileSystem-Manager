@@ -183,7 +183,7 @@ struct NTFS_AttrFileName {
 	uint64_t accessedTime; // 0x20
 	uint64_t allocatedSize; // 0x28
 	uint64_t dataSize; // 0x30
-	uint32_t fileFlags; // 0x38 -> 0x01: read only, 0x02: hidden, 0x04: system, 0x20: archive, 0x40: device, 0x80: normal, 0x100: temporary, 0x200: sparse, 0x400: reparse point, 0x800: compressed, 0x1000: offline, 0x2000: not content indexed, 0x4000: encrypted, 0x8000: directory, 0x10000: index view
+	uint32_t fileFlags; // 0x38 -> 0x10000000: directory, 0x20000000: index view
 	uint32_t eaReparse; // 0x3C
 	uint8_t nameLength; // 0x40
 	uint8_t nameSpace; // 0x41
@@ -209,10 +209,10 @@ struct NTFS_IndexRootDataHeader {
 
 #pragma pack(push, 1)
 struct NTFS_IndexEntry {
-	uint64_t reference; // 0x00
+	uint64_t reference; // 0x00 -> important
 	uint16_t length; // 0x08
 	uint16_t offsetToEndName; // 0x0A -> calculate from the next alignment to 8 bytes.
-	uint16_t flags; // 0x0C
+	uint16_t flags; // 0x0C			
 	uint8_t padding[2]; // 0x0E
 	// NTFS_AttrFileName fileNameAttr; // 0x10 - if in indexRootDataHeader->type = 0x30
 };

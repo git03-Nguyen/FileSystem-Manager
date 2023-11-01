@@ -1,6 +1,6 @@
 ﻿#include "ReadSector.h"
 
-DWORD readByte(std::string drive, uint64_t byteOffset, uint8_t sector[], int sizeToRead) { 
+DWORD readByte(std::string drive, uint64_t byteOffset, uint8_t buffer[], int sizeToRead) { 
     if (drive.size() != 2 || drive[1] != ':') {
         SetLastError(3);
         throw "Đường dẫn ổ đĩa không hợp lệ!";
@@ -36,7 +36,7 @@ DWORD readByte(std::string drive, uint64_t byteOffset, uint8_t sector[], int siz
         SetFilePointer(partition, byteOffset, NULL, FILE_BEGIN); //Set a Point to Read - MUST be a multiple of 512
     }
 
-    if (!ReadFile(partition, sector, sizeToRead, &bytesRead, NULL)) {
+    if (!ReadFile(partition, buffer, sizeToRead, &bytesRead, NULL)) {
         throw "Không thể đọc sector!";
     }
 

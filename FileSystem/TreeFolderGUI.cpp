@@ -225,16 +225,18 @@ void TreeFolderGUI::displayCurrentFolder(std::string drive, uint64_t entryNum, N
 				dataRun = dataRun + 1;
 				// Read "lower4bit" bytes
 				uint64_t sizeInCluster = 0;
-				for (int i = 0; i < lower4bit; i++) {
-					sizeInCluster = sizeInCluster | (uint8_t)(*dataRun << (i * 8));
-					dataRun = dataRun + 1;
+				for (int i = lower4bit - 1; i >= 0; i--) {
+					// add 1 byte at dataRun to sizeInCluster
+					sizeInCluster = sizeInCluster * 0x100 + *(dataRun + i);
 				}
+				dataRun = dataRun + lower4bit;
 				// Read "higher4bit" bytes
 				uint64_t clusterOffset = 0;
-				for (int i = 0; i < higher4bit; i++) {
-					clusterOffset = clusterOffset | (uint64_t)(*dataRun << (i * 8));
-					dataRun = dataRun + 1;
+				for (int i = higher4bit - 1; i >= 0; i--) {
+					// add 1 byte at dataRun to clusterOffset
+					clusterOffset = clusterOffset * 0x100 + *(dataRun + i);
 				}
+				dataRun = dataRun + higher4bit;
 
 				// Read the data in clusterOffset, by sizeInCluster clusters
 				uint64_t sizeInByte = sizeInCluster * bootSector->secPerClus * bootSector->bytesPerSec;
@@ -319,7 +321,7 @@ void TreeFolderGUI::addItemToTreeNTFS(NTFS_MftEntryHeader* entry, int mftEntryNu
 	// If name is ".", skip it
 	if (fileName->fileName == L'.' && fileName->nameLength == 1) return;
 	
-	QTreeWidgetItem* item = new QTreeWidgetItem(ui->treeFolder);
+	QTreeWidgetItem* item = new QTreeWidgetItem();
 	item->setTextAlignment(2, Qt::AlignRight);
 
 	// Set file name using wchar_t &fileName->fileName
@@ -379,27 +381,26 @@ void TreeFolderGUI::addItemToTreeNTFS(NTFS_MftEntryHeader* entry, int mftEntryNu
 	std::string timeAccessed = std::to_string(systemTime.wYear) + "-" + std::to_string(systemTime.wMonth) + "-" + std::to_string(systemTime.wDay) + " " + std::to_string(systemTime.wHour) + ":" + std::to_string(systemTime.wMinute) + ":" + std::to_string(systemTime.wSecond);
 	item->setText(5, QString::fromStdString(timeAccessed));
 
-	// Read the flags from file name attribute
+	// Read the flags from standardInfo and fileName attributes
 	std::string attributes = "";
-	if (fileName->fileFlags & 0x01) attributes += "Read-only, ";
-	if (fileName->fileFlags & 0x02) attributes += "Hidden, ";
-	if (fileName->fileFlags & 0x04) attributes += "System, ";
-	if (fileName->fileFlags & 0x08) attributes += "Archive, ";
-	if (fileName->fileFlags & 0x10) attributes += "Device, ";
-	if (fileName->fileFlags & 0x20) attributes += "Normal, ";
-	if (fileName->fileFlags & 0x40) attributes += "Temporary, ";
-	if (fileName->fileFlags & 0x80) attributes += "Sparse file, ";
-	if (fileName->fileFlags & 0x100) attributes += "Reparse point, ";
-	if (fileName->fileFlags & 0x200) attributes += "Compressed, ";
-	if (fileName->fileFlags & 0x400) attributes += "Offline, ";
-	if (fileName->fileFlags & 0x800) attributes += "Not content indexed, ";
-	if (fileName->fileFlags & 0x1000) attributes += "Encrypted, ";
-	if (fileName->fileFlags & 0x2000) attributes += "Directory, ";
-	if (attributes.size() > 0) {
-		attributes.pop_back();
-		attributes.pop_back();
-	}
+	if (standardInfo->flags & 0x0001) attributes += "Read-only, ";
+	if (standardInfo->flags & 0x0002) attributes += "Hidden, ";
+	if (standardInfo->flags & 0x0004) attributes += "System, ";
+	if (standardInfo->flags & 0x0020) attributes += "Archive, ";
+	if (standardInfo->flags & 0x0040) attributes += "Device, ";
+	if (standardInfo->flags & 0x0080) attributes += "Normal, ";
+	if (standardInfo->flags & 0x0100) attributes += "Temporary, ";
+	if (standardInfo->flags & 0x0200) attributes += "Sparse file, ";
+	if (standardInfo->flags & 0x0400) attributes += "Reparse point, ";
+	if (standardInfo->flags & 0x0800) attributes += "Compressed, ";
+	if (standardInfo->flags & 0x1000) attributes += "Offline, ";
+	if (standardInfo->flags & 0x2000) attributes += "Not content indexed, ";
+	if (standardInfo->flags & 0x4000) attributes += "Encrypted, ";
+	if (fileName->fileFlags & 0x10000000) attributes += "Directory, ";
+	if (fileName->fileFlags & 0x20000000) attributes += "Index view, ";
+	if (attributes.size() > 0) attributes = attributes.substr(0, attributes.size() - 2);
 	item->setText(6, QString::fromStdString(attributes));
+
 
 	// Set MFT sector
 	NTFS_BS* bootSector = (NTFS_BS*)this->bootSector;
@@ -410,6 +411,9 @@ void TreeFolderGUI::addItemToTreeNTFS(NTFS_MftEntryHeader* entry, int mftEntryNu
 
 	// Set MFT entry number
 	item->setText(8, QString::number(mftEntryNum));
+
+	// Add item to tree
+	ui->treeFolder->addTopLevelItem(item);
 }
 
 void TreeFolderGUI::addItemToTreeFAT32(const FAT32_DirectoryEntry& entry, std::wstring name) {
@@ -726,16 +730,18 @@ void TreeFolderGUI::openFileNTFS(QTreeWidgetItem* item) {
 			dataRun = dataRun + 1;
 			// Read "lower4bit" bytes
 			uint64_t sizeInCluster = 0;
-			for (int i = 0; i < lower4bit; i++) {
-				sizeInCluster = sizeInCluster | (uint8_t)(*dataRun << (i * 8));
-				dataRun = dataRun + 1;
+			for (int i = lower4bit - 1; i >= 0; i--) {
+				// add 1 byte at dataRun to sizeInCluster
+				sizeInCluster = sizeInCluster * 0x100 + *(dataRun + i);
 			}
+			dataRun = dataRun + lower4bit;
 			// Read "higher4bit" bytes
 			uint64_t clusterOffset = 0;
-			for (int i = 0; i < higher4bit; i++) {
-				clusterOffset = clusterOffset | (uint64_t)(*dataRun << (i * 8));
-				dataRun = dataRun + 1;
+			for (int i = higher4bit - 1; i >= 0; i--) {
+				// add 1 byte at dataRun to clusterOffset
+				clusterOffset = clusterOffset * 0x100 + *(dataRun + i);
 			}
+			dataRun = dataRun + higher4bit;
 
 			// Read the data in clusterOffset, by sizeInCluster clusters
 			uint64_t sizeInByte = sizeInCluster * bootSector->secPerClus * bootSector->bytesPerSec;
@@ -746,19 +752,23 @@ void TreeFolderGUI::openFileNTFS(QTreeWidgetItem* item) {
 			if (firstCheck) {
 				if (*(uint16_t*)dataBuffer == 0xFEFF) {
 					isUnicode = true;
-					ui->txtPreview->insertPlainText(QString::fromStdWString(std::wstring((wchar_t*)dataBuffer + 1, (sizeInByte - 2) / 2)));
+					std::wstring text = std::wstring((wchar_t*)dataBuffer + 1, (sizeInByte - 2) / 2);
+					ui->txtPreview->insertPlainText(QString::fromStdWString(text));
 				}
 				else {
 					isUTF8 = true;
-					ui->txtPreview->insertPlainText(QString::fromStdString(std::string((char*)dataBuffer, sizeInByte)));
+					std::string text = std::string((char*)dataBuffer, sizeInByte);
+					ui->txtPreview->insertPlainText(QString::fromStdString(text));
 				}
 			}
 			else {
 				if (isUnicode) {
-					ui->txtPreview->insertPlainText(QString::fromStdWString(std::wstring((wchar_t*)dataBuffer, sizeInByte / 2)));
+					std::wstring text = std::wstring((wchar_t*)dataBuffer, (sizeInByte) / 2);
+					ui->txtPreview->insertPlainText(QString::fromStdWString(text));
 				}
 				else if (isUTF8) {
-					ui->txtPreview->insertPlainText(QString::fromStdString(std::string((char*)dataBuffer, sizeInByte)));
+					std::string text = std::string((char*)dataBuffer, sizeInByte);
+					ui->txtPreview->insertPlainText(QString::fromStdString(text));
 				}
 			}
 			
