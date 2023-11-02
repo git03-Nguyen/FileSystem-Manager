@@ -555,6 +555,7 @@ std::wstring TreeFolderGUI::getFileNameFAT32(std::stack<FAT32_LFN_DirectoryEntry
 }
 
 void TreeFolderGUI::openFileFAT32(QTreeWidgetItem* item) {
+	if (item->text(8) == "") return;
 	uint32_t clusterStart = std::stoi(item->text(8).toStdString());
 	std::wstring wName = item->text(0).toStdWString();
 	wName.erase(std::remove(wName.begin(), wName.end(), '\0'), wName.end());
