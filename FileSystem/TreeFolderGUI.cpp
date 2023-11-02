@@ -548,6 +548,8 @@ std::wstring TreeFolderGUI::getFileNameFAT32(std::stack<FAT32_LFN_DirectoryEntry
 
 	// My name string may contain 0xFFFF at the end, so I have to trim it
 	name.erase(name.find_last_not_of(L'\xFFFF') + 1);
+	// Trim \0 at the end
+	name.erase(name.find_last_not_of(L'\0') + 1);
 	return name;
 
 }
