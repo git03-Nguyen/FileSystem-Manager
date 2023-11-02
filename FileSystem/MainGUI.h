@@ -4,6 +4,7 @@
 #include <QHBoxLayout>
 #include <QInputDialog>
 #include <QMessageBox>
+#include <QDesktopServices.h>
 #include "ui_MainGUI.h"
 
 #include <vector>

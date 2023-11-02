@@ -22,6 +22,13 @@ MainGUI::MainGUI(QWidget *parent)
 		QMessageBox::information(this, "Thông tin", "Đồ án môn học Hệ điều hành\nĐề tài: Hệ thống quản lý tập tin\n\nNhóm sinh viên thực hiện:\n1. Nguyễn Đình Ánh - 21120171\n2. Nguyễn Tuấn Đạt - 21120172\n3. Nguyễn Trần Thiên Phúc - 21120114");
 	});
 
+    // When click on action actionTutorial, open link to tutorial
+    connect(ui->actionTutorial, &QAction::triggered, this, [=]() {
+        QDesktopServices::openUrl(QUrl("https://drive.google.com/drive/folders/11BA6F7Q2kwKU1PFxFpD6wAhVtVcpNnpk?usp=sharing"));
+    });
+
+	
+
 }
 
 MainGUI::~MainGUI()
